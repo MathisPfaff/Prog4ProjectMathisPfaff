@@ -10,6 +10,7 @@
 #include "ResourceManager.h"
 #include "TextObject.h"
 #include "Scene.h"
+#include "FPSComponent.h"
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -32,6 +33,14 @@ static void load()
 	to->SetColor({ 255, 255, 0, 255 });
 	to->SetPosition(292, 20);
 	scene.Add(std::move(to));
+
+	// FPS Counter in top left corner
+	auto fpsFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 24);
+	auto fpsCounter = std::make_unique<dae::TextObject>("FPS: 0.0", fpsFont);
+	fpsCounter->SetColor({ 0, 255, 0, 255 });
+	fpsCounter->SetPosition(10, 10);
+	fpsCounter->AddComponent<dae::FPSComponent>(fpsCounter.get());
+	scene.Add(std::move(fpsCounter));
 }
 
 int main(int, char*[]) {

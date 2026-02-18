@@ -9,6 +9,11 @@ dae::TextObject::TextObject(const std::string& text, std::shared_ptr<Font> font,
 	: m_needsUpdate(true), m_text(text), m_color(color), m_font(std::move(font)), m_textTexture(nullptr)
 { }
 
+void dae::TextObject::FixedUpdate(float delta_time)
+{
+	GameObject::FixedUpdate(delta_time);
+}
+
 void dae::TextObject::Update()
 {
 	if (m_needsUpdate)
@@ -27,6 +32,14 @@ void dae::TextObject::Update()
 		m_textTexture = std::make_shared<Texture2D>(texture);
 		m_needsUpdate = false;
 	}
+
+	// Call base class to update components
+	GameObject::Update();
+}
+
+void dae::TextObject::LateUpdate()
+{
+	GameObject::LateUpdate();
 }
 
 void dae::TextObject::Render() const

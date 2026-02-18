@@ -15,6 +15,7 @@ namespace dae
 
 		void FixedUpdate(float fixed_time_step);
 		void Update();
+		void LateUpdate();
 		void Render() const;
 
 		~Scene() = default;

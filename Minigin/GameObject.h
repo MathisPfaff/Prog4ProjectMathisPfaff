@@ -1,18 +1,28 @@
 #pragma once
 #include <string>
 #include <memory>
+#include <vector>
 #include "Transform.h"
+#include "BaseComponent.h"
 
 namespace dae
 {
 	class Texture2D;
+	class BaseComponent;
+
 	class GameObject 
 	{
 		Transform m_transform{};
 		std::shared_ptr<Texture2D> m_texture{};
+
+		std::vector<std::unique_ptr<BaseComponent>> m_pComponents;
+		std::vector<std::unique_ptr<BaseComponent>> m_pDeleteComponents;
+
+		bool m_MarkedForDestroy{};
 	public:
 		virtual void FixedUpdate(float fixed_time_step);
 		virtual void Update();
+		virtual void LateUpdate();
 		virtual void Render() const;
 
 		void SetTexture(const std::string& filename);
@@ -24,5 +34,42 @@ namespace dae
 		GameObject(GameObject&& other) = delete;
 		GameObject& operator=(const GameObject& other) = delete;
 		GameObject& operator=(GameObject&& other) = delete;
+
+		void MarkForDestroy() { m_MarkedForDestroy = true; }
+		bool IsMarkedForDestroy() const { return m_MarkedForDestroy; }
+
+		template <typename T>
+		T* GetComponent()
+		{
+			for (const auto& component : m_pComponents)
+			{
+				if (dynamic_cast<T*>(component.get()))
+					return static_cast<T*>(component.get());
+			}
+			return nullptr;
+		}
+
+		template <typename T, typename... Args>
+		T* AddComponent(Args&&... args)
+		{
+			static_assert(std::is_base_of<BaseComponent, T>::value, "T must derive from BaseComponent");
+			auto newComponent = std::make_unique<T>(std::forward<Args>(args)...);
+			newComponent->SetOwner(this);
+			T* rawPtr = newComponent.get();
+			m_pComponents.push_back(std::move(newComponent));
+			return rawPtr;
+		}
+
+		template <typename T>
+		T* AddComponent(std::unique_ptr<T> component)
+		{
+			static_assert(std::is_base_of<BaseComponent, T>::value, "T must derive from BaseComponent");
+			component->SetOwner(this);
+			T* rawPtr = component.get();
+			m_pComponents.push_back(std::move(component));
+			return rawPtr;
+		}
+
+		void RemoveComponent(BaseComponent* pComponent);
 	};
 }
