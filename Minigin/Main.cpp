@@ -8,9 +8,10 @@
 #include "Minigin.h"
 #include "SceneManager.h"
 #include "ResourceManager.h"
-#include "TextObject.h"
+#include "TextComponent.h"
 #include "Scene.h"
 #include "FPSComponent.h"
+#include "GameObject.h"
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -29,17 +30,17 @@ static void load()
 	scene.Add(std::move(go));
 
 	auto font = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 36);
-	auto to = std::make_unique<dae::TextObject>("Programming 4 Assignment", font);
-	to->SetColor({ 255, 255, 0, 255 });
-	to->SetPosition(292, 20);
-	scene.Add(std::move(to));
+	go = std::make_unique<dae::GameObject>();
+	go->SetPosition(292, 20);
+	go->AddComponent<dae::TextComponent>("Programming 4 Assignment", font, SDL_Color{ 255, 255, 0, 255 });
+	scene.Add(std::move(go));
 
 	// FPS Counter in top left corner
 	auto fpsFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 24);
-	auto fpsCounter = std::make_unique<dae::TextObject>("FPS: 0.0", fpsFont);
-	fpsCounter->SetColor({ 0, 255, 0, 255 });
+	auto fpsCounter = std::make_unique<dae::GameObject>();
 	fpsCounter->SetPosition(10, 10);
-	fpsCounter->AddComponent<dae::FPSComponent>(fpsCounter.get());
+	fpsCounter->AddComponent<dae::TextComponent>("FPS: 0.0", fpsFont, SDL_Color{ 0, 255, 0, 255 });
+	fpsCounter->AddComponent<dae::FPSComponent>();
 	scene.Add(std::move(fpsCounter));
 }
 

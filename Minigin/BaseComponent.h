@@ -9,9 +9,10 @@ namespace dae
 	private:
 		GameObject* m_pOwner{};
 	public:
-		BaseComponent(GameObject* owner) : m_pOwner(owner) {};
+		BaseComponent() : m_pOwner(nullptr) {}
+		BaseComponent(GameObject* owner) : m_pOwner(owner) {}
 		virtual ~BaseComponent();
-		BaseComponent(const BaseComponent& other()) = delete;
+		BaseComponent(const BaseComponent& other) = delete;
 		BaseComponent(BaseComponent&& other) = delete;
 		virtual BaseComponent& operator=(const BaseComponent& other) = delete;
 		virtual BaseComponent& operator=(BaseComponent&& other) = delete;

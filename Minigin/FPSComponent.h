@@ -3,12 +3,12 @@
 
 namespace dae
 {
-	class TextObject;
+	class TextComponent;
 
 	class FPSComponent final : public BaseComponent
 	{
 	public:
-		FPSComponent(GameObject* owner);
+		FPSComponent() = default;
 		virtual ~FPSComponent() override = default;
 		FPSComponent(const FPSComponent& other) = delete;
 		FPSComponent(FPSComponent&& other) = delete;
@@ -26,7 +26,7 @@ namespace dae
 		float m_FPS{};
 		int m_FrameCount{};
 		float m_ElapsedTime{};
-		TextObject* m_pTextObject{ nullptr };
+		TextComponent* m_pTextComponent{ nullptr };
 
 		void CalculateFPS(float delta_time);
 	};

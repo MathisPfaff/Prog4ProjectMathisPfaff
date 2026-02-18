@@ -10,7 +10,7 @@ namespace dae
 	class Texture2D;
 	class BaseComponent;
 
-	class GameObject 
+	class GameObject final
 	{
 		Transform m_transform{};
 		std::shared_ptr<Texture2D> m_texture{};
@@ -20,16 +20,18 @@ namespace dae
 
 		bool m_MarkedForDestroy{};
 	public:
-		virtual void FixedUpdate(float fixed_time_step);
-		virtual void Update();
-		virtual void LateUpdate();
-		virtual void Render() const;
+		void FixedUpdate(float fixed_time_step);
+		void Update();
+		void LateUpdate();
+		void Render() const;
 
 		void SetTexture(const std::string& filename);
 		void SetPosition(float x, float y);
+		Transform& GetTransform() { return m_transform; }
+		const Transform& GetTransform() const { return m_transform; }
 
 		GameObject() = default;
-		virtual ~GameObject();
+		~GameObject();
 		GameObject(const GameObject& other) = delete;
 		GameObject(GameObject&& other) = delete;
 		GameObject& operator=(const GameObject& other) = delete;

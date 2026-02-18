@@ -1,14 +1,8 @@
 #include "FPSComponent.h"
 #include "GameTime.h"
-#include "TextObject.h"
+#include "TextComponent.h"
+#include "GameObject.h"
 #include <format>
-
-dae::FPSComponent::FPSComponent(GameObject* owner) :
-	dae::BaseComponent(owner) 
-{
-	// Try to get TextObject from owner
-	m_pTextObject = dynamic_cast<TextObject*>(owner);
-}
 
 void dae::FPSComponent::FixedUpdate(float deltaTime)
 {
@@ -17,16 +11,22 @@ void dae::FPSComponent::FixedUpdate(float deltaTime)
 
 void dae::FPSComponent::Update()
 {
+	// Get TextComponent from owner if we don't have it yet
+	if (!m_pTextComponent && GetOwner())
+	{
+		m_pTextComponent = GetOwner()->GetComponent<TextComponent>();
+	}
+
 	float deltaTime = dae::GameTime::GetInstance().GetDeltaTime();
 	CalculateFPS(deltaTime);
 }
 
 void dae::FPSComponent::LateUpdate()
 {
-	// Update the text object with the new FPS value
-	if (m_pTextObject)
+	// Update the text component with the new FPS value
+	if (m_pTextComponent)
 	{
-		m_pTextObject->SetText(std::format("FPS: {:.1f}", m_FPS));
+		m_pTextComponent->SetText(std::format("FPS: {:.1f}", m_FPS));
 	}
 }
 

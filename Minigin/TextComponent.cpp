@@ -1,23 +1,22 @@
-﻿#include <stdexcept>
+#include <stdexcept>
 #include <SDL3_ttf/SDL_ttf.h>
-#include "TextObject.h"
+#include "TextComponent.h"
 #include "Renderer.h"
 #include "Font.h"
 #include "Texture2D.h"
+#include "GameObject.h"
 
-dae::TextObject::TextObject(const std::string& text, std::shared_ptr<Font> font, const SDL_Color& color)
-	: m_needsUpdate(true), m_text(text), m_color(color), m_font(std::move(font)), m_textTexture(nullptr)
+dae::TextComponent::TextComponent(const std::string& text, std::shared_ptr<Font> font, const SDL_Color& color)
+	: BaseComponent(), m_needsUpdate(true), m_text(text), m_color(color), m_font(std::move(font)), m_textTexture(nullptr)
 { }
 
-void dae::TextObject::FixedUpdate(float delta_time)
+void dae::TextComponent::FixedUpdate(float delta_time)
 {
-	GameObject::FixedUpdate(delta_time);
+	(void)delta_time;
 }
 
-void dae::TextObject::Update()
+void dae::TextComponent::Update()
 {
-	GameObject::Update();
-
 	if (m_needsUpdate)
 	{
 		const auto surf = TTF_RenderText_Blended(m_font->GetFont(), m_text.c_str(), m_text.length(), m_color);
@@ -36,35 +35,28 @@ void dae::TextObject::Update()
 	}
 }
 
-void dae::TextObject::LateUpdate()
+void dae::TextComponent::LateUpdate()
 {
-	GameObject::LateUpdate();
+	
 }
 
-void dae::TextObject::Render() const
+void dae::TextComponent::Render() const
 {
-	if (m_textTexture != nullptr)
+	if (m_textTexture != nullptr && GetOwner())
 	{
-		const auto& pos = m_transform.GetPosition();
+		const auto& pos = GetOwner()->GetTransform().GetPosition();
 		Renderer::GetInstance().RenderTexture(*m_textTexture, pos.x, pos.y);
 	}
 }
 
-void dae::TextObject::SetText(const std::string& text)
+void dae::TextComponent::SetText(const std::string& text)
 {
 	m_text = text;
 	m_needsUpdate = true;
 }
 
-void dae::TextObject::SetPosition(const float x, const float y)
-{
-	m_transform.SetPosition(x, y);
-}
-
-void dae::TextObject::SetColor(const SDL_Color& color) 
+void dae::TextComponent::SetColor(const SDL_Color& color) 
 { 
 	m_color = color; 
 	m_needsUpdate = true; 
 }
-
-
