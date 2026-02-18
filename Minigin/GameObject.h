@@ -11,6 +11,7 @@ namespace dae
 		Transform m_transform{};
 		std::shared_ptr<Texture2D> m_texture{};
 	public:
+		virtual void FixedUpdate(float fixed_time_step);
 		virtual void Update();
 		virtual void Render() const;
 

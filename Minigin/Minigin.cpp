@@ -17,6 +17,7 @@
 #include "SceneManager.h"
 #include "Renderer.h"
 #include "ResourceManager.h"
+#include "GameTime.h"
 
 SDL_Window* g_window{};
 
@@ -104,13 +105,14 @@ void dae::Minigin::RunOneFrame()
 {
 	const auto current_time = std::chrono::high_resolution_clock::now();
 	const float delta_time = std::chrono::duration<float>(current_time - last_time).count();
+	GameTime::GetInstance().SetDeltaTime(delta_time);
 	last_time = current_time;
 	lag += delta_time;
 	
 	doContinue = InputManager::GetInstance().ProcessInput();
 	while (lag >= fixed_time_step)
 	{
-		// fixed update ...
+		SceneManager::GetInstance().FixedUpdate(fixed_time_step);
 		lag -= fixed_time_step;
 	}
 	SceneManager::GetInstance().Update();

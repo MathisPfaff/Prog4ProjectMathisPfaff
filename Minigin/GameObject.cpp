@@ -5,6 +5,8 @@
 
 dae::GameObject::~GameObject() = default;
 
+void dae::GameObject::FixedUpdate(float fixed_time_step){}
+
 void dae::GameObject::Update(){}
 
 void dae::GameObject::Render() const
