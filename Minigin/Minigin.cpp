@@ -116,6 +116,7 @@ void dae::Minigin::RunOneFrame()
 		lag -= fixed_time_step;
 	}
 	SceneManager::GetInstance().Update();
+	SceneManager::GetInstance().LateUpdate();
 	Renderer::GetInstance().Render();
 
 	const auto sleep_time = current_time + std::chrono::milliseconds(ms_per_frame) - std::chrono::high_resolution_clock::now();

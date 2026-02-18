@@ -23,10 +23,16 @@ void dae::FPSComponent::Update()
 
 void dae::FPSComponent::LateUpdate()
 {
+	// Update the text object with the new FPS value
+	if (m_pTextObject)
+	{
+		m_pTextObject->SetText(std::format("FPS: {:.1f}", m_FPS));
+	}
 }
 
 void dae::FPSComponent::Render() const
 {
+	
 }
 
 void dae::FPSComponent::CalculateFPS(float deltaTime)
@@ -39,11 +45,5 @@ void dae::FPSComponent::CalculateFPS(float deltaTime)
 		m_FPS = static_cast<float>(m_FrameCount) / m_ElapsedTime;
 		m_FrameCount = 0;
 		m_ElapsedTime = 0.0f;
-
-		// Update the text object with the new FPS value
-		if (m_pTextObject)
-		{
-			m_pTextObject->SetText(std::format("FPS: {:.1f}", m_FPS));
-		}
 	}
 }

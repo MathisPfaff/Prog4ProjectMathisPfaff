@@ -16,6 +16,8 @@ void dae::TextObject::FixedUpdate(float delta_time)
 
 void dae::TextObject::Update()
 {
+	GameObject::Update();
+
 	if (m_needsUpdate)
 	{
 		const auto surf = TTF_RenderText_Blended(m_font->GetFont(), m_text.c_str(), m_text.length(), m_color);
@@ -32,9 +34,6 @@ void dae::TextObject::Update()
 		m_textTexture = std::make_shared<Texture2D>(texture);
 		m_needsUpdate = false;
 	}
-
-	// Call base class to update components
-	GameObject::Update();
 }
 
 void dae::TextObject::LateUpdate()
