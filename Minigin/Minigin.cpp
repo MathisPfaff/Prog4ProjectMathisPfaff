@@ -93,16 +93,14 @@ void dae::Minigin::Run(const std::function<void()>& load)
 {
 	load();
 #ifndef __EMSCRIPTEN__
-	auto last_time = std::chrono::high_resolution_clock::now();
-	float lag = 0.0f;
 	while (doContinue)
-		RunOneFrame(lag, last_time);
+		RunOneFrame();
 #else
 	emscripten_set_main_loop_arg(&LoopCallback, this, 0, true);
 #endif
 }
 
-void dae::Minigin::RunOneFrame(float& lag, auto& last_time)
+void dae::Minigin::RunOneFrame()
 {
 	const auto current_time = std::chrono::high_resolution_clock::now();
 	const float delta_time = std::chrono::duration<float>(current_time - last_time).count();

@@ -7,14 +7,16 @@ namespace dae
 {
 	class Minigin final
 	{
-		bool doContinue{true};
+		bool doContinue{ true };
 		float fixed_time_step{ 0.016f };
 		int ms_per_frame{ 16 };
+		std::chrono::high_resolution_clock::time_point last_time{ std::chrono::high_resolution_clock::now() };
+		float lag{};
 	public:
 		explicit Minigin(const std::filesystem::path& dataPath);
 		~Minigin();
 		void Run(const std::function<void()>& load);
-		void RunOneFrame(float& lag, auto& last_time);
+		void RunOneFrame();
 
 		Minigin(const Minigin& other) = delete;
 		Minigin(Minigin&& other) = delete;
