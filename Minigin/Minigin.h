@@ -7,12 +7,14 @@ namespace dae
 {
 	class Minigin final
 	{
-		bool m_quit{};
+		bool doContinue{true};
+		float fixed_time_step{ 0.016f };
+		int ms_per_frame{ 16 };
 	public:
 		explicit Minigin(const std::filesystem::path& dataPath);
 		~Minigin();
 		void Run(const std::function<void()>& load);
-		void RunOneFrame();
+		void RunOneFrame(float& lag, auto& last_time);
 
 		Minigin(const Minigin& other) = delete;
 		Minigin(Minigin&& other) = delete;
