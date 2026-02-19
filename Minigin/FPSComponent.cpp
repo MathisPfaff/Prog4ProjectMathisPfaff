@@ -11,7 +11,6 @@ void dae::FPSComponent::FixedUpdate(float deltaTime)
 
 void dae::FPSComponent::Update()
 {
-	// Get TextComponent from owner if we don't have it yet
 	if (!m_pTextComponent && GetOwner())
 	{
 		m_pTextComponent = GetOwner()->GetComponent<TextComponent>();

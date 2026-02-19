@@ -20,7 +20,7 @@ namespace dae
 		void SetText(const std::string& text);
 		void SetColor(const SDL_Color& color);
 
-		TextComponent(const std::string& text, std::shared_ptr<Font> font, const SDL_Color& color = { 255, 255, 255, 255 });
+		TextComponent(GameObject* owner, const std::string& text, std::shared_ptr<Font> font, const SDL_Color& color = { 255, 255, 255, 255 });
 		virtual ~TextComponent() = default;
 		TextComponent(const TextComponent& other) = delete;
 		TextComponent(TextComponent&& other) = delete;

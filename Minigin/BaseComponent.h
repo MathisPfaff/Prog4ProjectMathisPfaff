@@ -9,7 +9,6 @@ namespace dae
 	private:
 		GameObject* m_pOwner{};
 	public:
-		BaseComponent() : m_pOwner(nullptr) {}
 		BaseComponent(GameObject* owner) : m_pOwner(owner) {}
 		virtual ~BaseComponent();
 		BaseComponent(const BaseComponent& other) = delete;
@@ -22,7 +21,6 @@ namespace dae
 		virtual void LateUpdate() = 0;
 		virtual void Render() const = 0;
 
-		void SetOwner(GameObject* owner);
 		GameObject* GetOwner() const;
 	};
 }

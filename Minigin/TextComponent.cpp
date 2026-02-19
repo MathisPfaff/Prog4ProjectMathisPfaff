@@ -6,8 +6,8 @@
 #include "Texture2D.h"
 #include "GameObject.h"
 
-dae::TextComponent::TextComponent(const std::string& text, std::shared_ptr<Font> font, const SDL_Color& color)
-	: BaseComponent(), m_needsUpdate(true), m_text(text), m_color(color), m_font(std::move(font)), m_textTexture(nullptr)
+dae::TextComponent::TextComponent(GameObject* owner, const std::string& text, std::shared_ptr<Font> font, const SDL_Color& color)
+	: dae::BaseComponent(owner), m_needsUpdate(true), m_text(text), m_color(color), m_font(std::move(font)), m_textTexture(nullptr)
 { }
 
 void dae::TextComponent::FixedUpdate(float delta_time)

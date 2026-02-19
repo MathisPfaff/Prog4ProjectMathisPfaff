@@ -55,20 +55,9 @@ namespace dae
 		T* AddComponent(Args&&... args)
 		{
 			static_assert(std::is_base_of<BaseComponent, T>::value, "T must derive from BaseComponent");
-			auto newComponent = std::make_unique<T>(std::forward<Args>(args)...);
-			newComponent->SetOwner(this);
+			auto newComponent = std::make_unique<T>(this, std::forward<Args>(args)...);
 			T* rawPtr = newComponent.get();
 			m_pComponents.push_back(std::move(newComponent));
-			return rawPtr;
-		}
-
-		template <typename T>
-		T* AddComponent(std::unique_ptr<T> component)
-		{
-			static_assert(std::is_base_of<BaseComponent, T>::value, "T must derive from BaseComponent");
-			component->SetOwner(this);
-			T* rawPtr = component.get();
-			m_pComponents.push_back(std::move(component));
 			return rawPtr;
 		}
 

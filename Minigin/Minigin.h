@@ -7,6 +7,7 @@ namespace dae
 {
 	class Minigin final
 	{
+	private:
 		bool doContinue{ true };
 		float fixed_time_step{ 0.016f };
 		int ms_per_frame{ 16 };
