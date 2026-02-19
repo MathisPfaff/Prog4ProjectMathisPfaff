@@ -12,6 +12,7 @@ namespace dae
 
 	class GameObject final
 	{
+	private:
 		Transform m_transform{};
 		std::shared_ptr<Texture2D> m_texture{};
 

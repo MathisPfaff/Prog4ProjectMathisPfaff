@@ -10,7 +10,7 @@ namespace dae
 	{
 	public:
 		void Add(std::unique_ptr<GameObject> object);
-		void Remove(const GameObject& object);
+		void Remove(GameObject& object);
 		void RemoveAll();
 
 		void FixedUpdate(float fixed_time_step);
@@ -29,6 +29,7 @@ namespace dae
 		explicit Scene() = default;
 
 		std::vector < std::unique_ptr<GameObject>> m_objects{};
+		std::vector < std::unique_ptr<GameObject>> m_deleteObjects{};
 	};
 
 }
