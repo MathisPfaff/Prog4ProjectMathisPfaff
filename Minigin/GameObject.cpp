@@ -5,6 +5,16 @@ namespace dae
 {
     GameObject::~GameObject()
     {
+        if (m_pParent)
+        {
+            m_pParent->RemoveChild(this);
+        }
+
+        for (auto* child : m_pChildren)
+        {
+            child->m_pParent = nullptr;
+        }
+
         m_pComponents.clear();
         m_pDeleteComponents.clear();
     }
@@ -149,13 +159,33 @@ namespace dae
 
     void GameObject::RemoveChild(GameObject* child)
     {
+        if (!child) return;
+
         auto it = std::remove(m_pChildren.begin(), m_pChildren.end(), child);
-        m_pChildren.erase(it, m_pChildren.end());
+        if (it != m_pChildren.end())
+        {
+            m_pChildren.erase(it, m_pChildren.end());
+            if (child->m_pParent == this)
+            {
+				child->m_pParent = nullptr;
+            }
+        }
     }
 
     bool GameObject::IsChild(GameObject* child) const
     {
-        return std::find(m_pChildren.begin(), m_pChildren.end(), child) != m_pChildren.end();
+        for (auto* c : m_pChildren)
+        {
+            if (c == child) 
+            { 
+                return true; 
+            }
+            if (c->IsChild(child)) 
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     void GameObject::RemoveComponent(BaseComponent* pComponent)
