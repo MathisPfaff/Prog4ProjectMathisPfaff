@@ -22,7 +22,6 @@ void dae::FPSComponent::Update()
 
 void dae::FPSComponent::LateUpdate()
 {
-	// Update the text component with the new FPS value
 	if (m_pTextComponent)
 	{
 		m_pTextComponent->SetText(std::format("FPS: {:.1f}", m_FPS));

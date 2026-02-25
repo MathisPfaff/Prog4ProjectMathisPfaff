@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <memory>
 #include <vector>
 #include "Transform.h"
@@ -7,14 +6,12 @@
 
 namespace dae
 {
-	class Texture2D;
 	class BaseComponent;
 
 	class GameObject final
 	{
 	private:
 		Transform m_transform{};
-		std::shared_ptr<Texture2D> m_texture{};
 
 		std::vector<std::unique_ptr<BaseComponent>> m_pComponents;
 		std::vector<std::unique_ptr<BaseComponent>> m_pDeleteComponents;
@@ -26,7 +23,6 @@ namespace dae
 		void LateUpdate();
 		void Render() const;
 
-		void SetTexture(const std::string& filename);
 		void SetPosition(float x, float y);
 		Transform& GetTransform() { return m_transform; }
 		const Transform& GetTransform() const { return m_transform; }

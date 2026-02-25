@@ -9,6 +9,7 @@
 #include "SceneManager.h"
 #include "ResourceManager.h"
 #include "TextComponent.h"
+#include "TextureComponent.h"
 #include "Scene.h"
 #include "FPSComponent.h"
 #include "GameObject.h"
@@ -21,11 +22,11 @@ static void load()
 	auto& scene = dae::SceneManager::GetInstance().CreateScene();
 
 	auto go = std::make_unique<dae::GameObject>();
-	go->SetTexture("background.png");
+	go->AddComponent<dae::TextureComponent>("background.png");
 	scene.Add(std::move(go));
 
 	go = std::make_unique<dae::GameObject>();
-	go->SetTexture("logo.png");
+	go->AddComponent<dae::TextureComponent>("logo.png");
 	go->SetPosition(358, 180);
 	scene.Add(std::move(go));
 
