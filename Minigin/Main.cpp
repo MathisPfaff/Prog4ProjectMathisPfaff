@@ -13,8 +13,10 @@
 #include "Scene.h"
 #include "FPSComponent.h"
 #include "GameObject.h"
+#include "RotationComponent.h"
 
 #include <filesystem>
+#include <glm/glm.hpp>
 namespace fs = std::filesystem;
 
 static void load()
@@ -27,22 +29,36 @@ static void load()
 
 	go = std::make_unique<dae::GameObject>();
 	go->AddComponent<dae::TextureComponent>("logo.png");
-	go->SetPosition(358, 180);
+	go->SetLocalPosition(358, 180);
 	scene.Add(std::move(go));
 
 	auto font = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 36);
 	go = std::make_unique<dae::GameObject>();
-	go->SetPosition(292, 20);
+	go->SetLocalPosition(292, 20);
 	go->AddComponent<dae::TextComponent>("Programming 4 Assignment", font, SDL_Color{ 255, 255, 0, 255 });
 	scene.Add(std::move(go));
 
-	// FPS Counter in top left corner
+	// FPS Counter
 	auto fpsFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 24);
 	auto fpsCounter = std::make_unique<dae::GameObject>();
-	fpsCounter->SetPosition(10, 10);
+	fpsCounter->SetLocalPosition(10, 10);
 	fpsCounter->AddComponent<dae::TextComponent>("FPS: 0.0", fpsFont, SDL_Color{ 0, 255, 0, 255 });
 	fpsCounter->AddComponent<dae::FPSComponent>();
 	scene.Add(std::move(fpsCounter));
+
+	auto pivot = std::make_unique<dae::GameObject>();
+	pivot->SetLocalPosition(400.f, 388.f);
+	pivot->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
+	pivot->AddComponent<dae::RotationComponent>(180.f, glm::vec3{ 440.f, 388.f, 0.f });
+
+	auto orbiter = std::make_unique<dae::GameObject>();
+	orbiter->SetParent(pivot.get(), true);
+	orbiter->SetLocalPosition(-50.f, 0.f);
+	orbiter->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
+	orbiter->AddComponent<dae::RotationComponent>(-270.f, orbiter->GetParent());
+
+	scene.Add(std::move(pivot));
+	scene.Add(std::move(orbiter));
 }
 
 int main(int, char*[]) {

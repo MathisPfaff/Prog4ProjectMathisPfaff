@@ -4,40 +4,43 @@
 #include "Texture2D.h"
 #include "GameObject.h"
 
-dae::TextureComponent::TextureComponent(GameObject* owner, const std::string& filename)
-	: BaseComponent(owner), m_isDirty(true), m_filename(filename)
-{ }
-
-void dae::TextureComponent::FixedUpdate(float delta_time)
+namespace dae
 {
-	(void)delta_time;
-}
+	TextureComponent::TextureComponent(GameObject* owner, const std::string& filename)
+		: BaseComponent(owner), m_isDirty(true), m_filename(filename)
+	{ }
 
-void dae::TextureComponent::Update()
-{
-	if (m_isDirty)
+	void TextureComponent::FixedUpdate(float delta_time)
 	{
-		m_texture = ResourceManager::GetInstance().LoadTexture(m_filename);
-		m_isDirty = false;
+		(void)delta_time;
 	}
-}
 
-void dae::TextureComponent::LateUpdate()
-{
-
-}
-
-void dae::TextureComponent::Render() const
-{
-	if (m_texture && GetOwner())
+	void TextureComponent::Update()
 	{
-		const auto& pos = GetOwner()->GetTransform().GetPosition();
-		Renderer::GetInstance().RenderTexture(*m_texture, pos.x, pos.y);
+		if (m_isDirty)
+		{
+			m_texture = ResourceManager::GetInstance().LoadTexture(m_filename);
+			m_isDirty = false;
+		}
 	}
-}
 
-void dae::TextureComponent::SetTexture(const std::string& filename)
-{
-	m_filename = filename;
-	m_isDirty = true;
+	void TextureComponent::LateUpdate()
+	{
+
+	}
+
+	void TextureComponent::Render() const
+	{
+		if (m_texture && GetOwner())
+		{
+			const auto& pos = GetOwner()->GetWorldPosition();
+			Renderer::GetInstance().RenderTexture(*m_texture, pos.x, pos.y);
+		}
+	}
+
+	void TextureComponent::SetTexture(const std::string& filename)
+	{
+		m_filename = filename;
+		m_isDirty = true;
+	}
 }

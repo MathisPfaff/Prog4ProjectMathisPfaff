@@ -51,11 +51,6 @@ namespace dae
         }
     }
 
-    void GameObject::SetPosition(float x, float y)
-    {
-        SetLocalPosition(x, y);
-    }
-
     void GameObject::SetLocalPosition(float x, float y)
     {
         m_transform.SetPosition(x, y, 0.0f);
