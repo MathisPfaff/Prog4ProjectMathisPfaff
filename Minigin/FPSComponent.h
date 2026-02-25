@@ -26,6 +26,7 @@ namespace dae
 		float m_FPS{};
 		int m_FrameCount{};
 		float m_ElapsedTime{};
+		bool m_fpsChanged{ false };
 		TextComponent* m_pTextComponent{ nullptr };
 
 		void CalculateFPS(float delta_time);

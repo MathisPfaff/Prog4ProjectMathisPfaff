@@ -22,9 +22,10 @@ void dae::FPSComponent::Update()
 
 void dae::FPSComponent::LateUpdate()
 {
-	if (m_pTextComponent)
+	if (m_pTextComponent && m_fpsChanged)
 	{
 		m_pTextComponent->SetText(std::format("FPS: {:.1f}", m_FPS));
+		m_fpsChanged = false;
 	}
 }
 
@@ -43,5 +44,6 @@ void dae::FPSComponent::CalculateFPS(float deltaTime)
 		m_FPS = static_cast<float>(m_FrameCount) / m_ElapsedTime;
 		m_FrameCount = 0;
 		m_ElapsedTime = 0.0f;
+		m_fpsChanged = true;
 	}
 }
