@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <glm/glm.hpp>
 #include "Transform.h"
 #include "BaseComponent.h"
 
@@ -12,9 +13,14 @@ namespace dae
 	{
 	private:
 		Transform m_transform{};
+		glm::vec3 m_worldPosition{};
+		bool m_PositionIsDirty{ true };
 
 		std::vector<std::unique_ptr<BaseComponent>> m_pComponents;
 		std::vector<std::unique_ptr<BaseComponent>> m_pDeleteComponents;
+
+		GameObject* m_pParent = nullptr;
+		std::vector<GameObject*> m_pChildren;
 
 		bool m_MarkedForDestroy{};
 	public:
@@ -23,6 +29,11 @@ namespace dae
 		void LateUpdate();
 		void Render() const;
 
+		void SetLocalPosition(float x, float y);
+		void SetLocalPosition(const glm::vec3& position);
+		const glm::vec3& GetWorldPosition();
+
+		// Keep for backwards compatibility, behaves as SetLocalPosition
 		void SetPosition(float x, float y);
 		Transform& GetTransform() { return m_transform; }
 		const Transform& GetTransform() const { return m_transform; }
@@ -36,6 +47,17 @@ namespace dae
 
 		void MarkForDestroy() { m_MarkedForDestroy = true; }
 		bool IsMarkedForDestroy() const { return m_MarkedForDestroy; }
+
+		GameObject* GetParent() const { return m_pParent; }
+		void SetParent(GameObject* parent, bool keepWorldPosition);
+
+		int GetChildCount() const { return static_cast<int>(m_pChildren.size()); }
+		GameObject* GetChild(int index) const;
+		void AddChild(GameObject* child);
+		void RemoveChild(GameObject* child);
+		bool IsChild(GameObject* child) const;
+
+		void SetPositionDirty();
 
 		template <typename T>
 		T* GetComponent()
