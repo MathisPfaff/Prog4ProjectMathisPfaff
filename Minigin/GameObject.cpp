@@ -102,12 +102,7 @@ namespace dae
 
     void GameObject::SetParent(GameObject* parent, bool keepWorldPosition)
     {
-        if (parent == this || m_pParent == parent)
-        {
-            return;
-        }
-
-        if (parent && parent->IsChild(this))
+        if (parent == this || m_pParent == parent || IsChild(parent))
         {
             return;
         }
@@ -147,20 +142,11 @@ namespace dae
 
     void GameObject::AddChild(GameObject* child)
     {
-        if (!child || child == this)
-        {
-            return;
-        }
-        if (std::find(m_pChildren.begin(), m_pChildren.end(), child) == m_pChildren.end())
-        {
-            m_pChildren.push_back(child);
-        }
+        m_pChildren.emplace_back(child);
     }
 
     void GameObject::RemoveChild(GameObject* child)
     {
-        if (!child) return;
-
         auto it = std::remove(m_pChildren.begin(), m_pChildren.end(), child);
         if (it != m_pChildren.end())
         {

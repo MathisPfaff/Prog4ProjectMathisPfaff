@@ -48,8 +48,6 @@ namespace dae
 
 		int GetChildCount() const { return static_cast<int>(m_pChildren.size()); }
 		GameObject* GetChild(int index) const;
-		void AddChild(GameObject* child);
-		void RemoveChild(GameObject* child);
 		bool IsChild(GameObject* child) const;
 
 		void SetPositionDirty();
@@ -76,5 +74,9 @@ namespace dae
 		}
 
 		void RemoveComponent(BaseComponent* pComponent);
+
+	private:
+		void AddChild(GameObject* child);
+		void RemoveChild(GameObject* child);
 	};
 }
