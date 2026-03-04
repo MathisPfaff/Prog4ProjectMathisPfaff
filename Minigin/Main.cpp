@@ -46,19 +46,21 @@ static void load()
 	fpsCounter->AddComponent<dae::FPSComponent>();
 	scene.Add(std::move(fpsCounter));
 
-	auto pivot = std::make_unique<dae::GameObject>();
-	pivot->SetLocalPosition(400.f, 388.f);
-	pivot->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
-	pivot->AddComponent<dae::RotationComponent>(180.f, glm::vec3{ 440.f, 388.f, 0.f });
+	// Test rotation component
 
-	auto orbiter = std::make_unique<dae::GameObject>();
-	orbiter->SetParent(pivot.get(), false);
-	orbiter->SetLocalPosition(-50.f, 0.f);
-	orbiter->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
-	orbiter->AddComponent<dae::RotationComponent>(-270.f, orbiter->GetParent());
-
-	scene.Add(std::move(pivot));
-	scene.Add(std::move(orbiter));
+	//auto pivot = std::make_unique<dae::GameObject>();
+	//pivot->SetLocalPosition(400.f, 388.f);
+	//pivot->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
+	//pivot->AddComponent<dae::RotationComponent>(180.f, glm::vec3{ 440.f, 388.f, 0.f });
+	//
+	//auto orbiter = std::make_unique<dae::GameObject>();
+	//orbiter->SetParent(pivot.get(), false);
+	//orbiter->SetLocalPosition(-50.f, 0.f);
+	//orbiter->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
+	//orbiter->AddComponent<dae::RotationComponent>(-270.f, orbiter->GetParent());
+	//
+	//scene.Add(std::move(pivot));
+	//scene.Add(std::move(orbiter));
 }
 
 int main(int, char*[]) {
