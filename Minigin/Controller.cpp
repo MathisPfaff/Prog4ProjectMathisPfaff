@@ -44,9 +44,8 @@ namespace dae
 	};
 }
 
-#elif defined(__EMSCRIPTEN__)  // ── Emscripten / web via HTML5 Gamepad API ───
-
-#include <emscripten/html5.h>
+#elif defined(__EMSCRIPTEN__)
+#include <SDL3/SDL.h>  // ← this was wrongly <emscripten/html5.h> before
 
 namespace dae
 {
@@ -58,31 +57,48 @@ namespace dae
 		{
 		}
 
+		~ControllerImpl()
+		{
+			if (m_pGamepad)
+				SDL_CloseGamepad(m_pGamepad);
+		}
+
 		void Update()
 		{
 			m_ButtonsPressedThisFrame  = 0;
 			m_ButtonsReleasedThisFrame = 0;
 
-			emscripten_sample_gamepad_data();
+			int count = 0;
+			SDL_JoystickID* pIDs = SDL_GetGamepads(&count);
 
-			EmscriptenGamepadEvent state;
-			const EMSCRIPTEN_RESULT result =
-				emscripten_get_gamepad_status(static_cast<int>(m_ControllerIndex), &state);
-
-			if (result != EMSCRIPTEN_RESULT_SUCCESS || !state.connected)
+			if (!pIDs || static_cast<int>(m_ControllerIndex) >= count)
 			{
+				SDL_free(pIDs);
+				if (m_pGamepad) { SDL_CloseGamepad(m_pGamepad); m_pGamepad = nullptr; }
 				m_PreviousButtons = 0;
 				m_CurrentButtons  = 0;
 				return;
 			}
 
+			const SDL_JoystickID id = pIDs[m_ControllerIndex];
+			SDL_free(pIDs);
+
+			if (!m_pGamepad || SDL_GetGamepadID(m_pGamepad) != id)
+			{
+				if (m_pGamepad) SDL_CloseGamepad(m_pGamepad);
+				m_pGamepad = SDL_OpenGamepad(id);
+			}
+
+			if (!m_pGamepad)
+				return;
+
 			m_PreviousButtons = m_CurrentButtons;
 			m_CurrentButtons  = 0;
 
-			for (int i = 0; i < state.numButtons && i < 16; ++i)
+			for (const auto& mapping : k_ButtonMap)
 			{
-				if (state.digitalButton[i])
-					m_CurrentButtons |= ToXInputMask(i);
+				if (SDL_GetGamepadButton(m_pGamepad, mapping.sdlButton))
+					m_CurrentButtons |= mapping.mask;
 			}
 
 			const unsigned int changes = m_CurrentButtons ^ m_PreviousButtons;
@@ -96,51 +112,32 @@ namespace dae
 		bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame & button) != 0; }
 
 	private:
-		// Maps W3C Standard Gamepad button indices → XInput-style bitmasks
-		static unsigned int ToXInputMask(int index)
+		struct ButtonMapping { SDL_GamepadButton sdlButton; unsigned int mask; };
+
+		static constexpr ButtonMapping k_ButtonMap[] =
 		{
-			switch (index)
-			{
-			case  0: return 0x1000; // ButtonA       (South / Cross)
-			case  1: return 0x2000; // ButtonB       (East  / Circle)
-			case  2: return 0x4000; // ButtonX       (West  / Square)
-			case  3: return 0x8000; // ButtonY       (North / Triangle)
-			case  4: return 0x0100; // LeftShoulder  (L1)
-			case  5: return 0x0200; // RightShoulder (R1)
-			// 6 = L2 analog, 7 = R2 analog — no XInput digital mapping
-			case  8: return 0x0020; // Back
-			case  9: return 0x0010; // Start
-			case 10: return 0x0040; // LeftThumb
-			case 11: return 0x0080; // RightThumb
-			case 12: return 0x0001; // DPadUp
-			case 13: return 0x0002; // DPadDown
-			case 14: return 0x0004; // DPadLeft
-			case 15: return 0x0008; // DPadRight
-			default: return 0;
-			}
-		}
+			{ SDL_GAMEPAD_BUTTON_SOUTH,          0x1000 }, // ButtonA
+			{ SDL_GAMEPAD_BUTTON_EAST,           0x2000 }, // ButtonB
+			{ SDL_GAMEPAD_BUTTON_WEST,           0x4000 }, // ButtonX
+			{ SDL_GAMEPAD_BUTTON_NORTH,          0x8000 }, // ButtonY
+			{ SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,  0x0100 }, // LeftShoulder
+			{ SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, 0x0200 }, // RightShoulder
+			{ SDL_GAMEPAD_BUTTON_BACK,           0x0020 }, // Back
+			{ SDL_GAMEPAD_BUTTON_START,          0x0010 }, // Start
+			{ SDL_GAMEPAD_BUTTON_LEFT_STICK,     0x0040 }, // LeftThumb
+			{ SDL_GAMEPAD_BUTTON_RIGHT_STICK,    0x0080 }, // RightThumb
+			{ SDL_GAMEPAD_BUTTON_DPAD_UP,        0x0001 }, // DPadUp
+			{ SDL_GAMEPAD_BUTTON_DPAD_DOWN,      0x0002 }, // DPadDown
+			{ SDL_GAMEPAD_BUTTON_DPAD_LEFT,      0x0004 }, // DPadLeft
+			{ SDL_GAMEPAD_BUTTON_DPAD_RIGHT,     0x0008 }, // DPadRight
+		};
 
 		unsigned int m_ControllerIndex;
+		SDL_Gamepad* m_pGamepad{ nullptr };
 		unsigned int m_PreviousButtons{};
 		unsigned int m_CurrentButtons{};
 		unsigned int m_ButtonsPressedThisFrame{};
 		unsigned int m_ButtonsReleasedThisFrame{};
-	};
-}
-
-#else  // ── No-op stub for any other unsupported platform ────────────────────
-
-namespace dae
-{
-	class Controller::ControllerImpl
-	{
-	public:
-		explicit ControllerImpl(unsigned int) {}
-		void Update() {}
-		bool IsDown(unsigned int) const     { return false; }
-		bool IsUp(unsigned int) const       { return true;  }
-		bool IsPressed(unsigned int) const  { return false; }
-		bool IsReleased(unsigned int) const { return false; }
 	};
 }
 
