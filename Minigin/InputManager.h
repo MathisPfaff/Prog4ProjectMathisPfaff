@@ -6,10 +6,7 @@
 #include <functional>
 #include "Singleton.h"
 #include "Command.h"
-
-#ifdef WIN32
 #include "Controller.h"
-#endif
 
 namespace dae
 {
@@ -26,11 +23,8 @@ namespace dae
 		bool ProcessInput();
 
 		void BindKeyboard(SDL_Scancode key, KeyState state, std::unique_ptr<Command> command);
-
-#ifdef WIN32
 		void BindController(unsigned int controllerIndex, Controller::ControllerButton button,
 		                    KeyState state, std::unique_ptr<Command> command);
-#endif
 
 		void ClearBindings();
 
@@ -41,12 +35,10 @@ namespace dae
 			std::unique_ptr<Command> command;
 		};
 
-		std::vector<InputBinding> m_Bindings;
-		std::vector<uint8_t> m_PreviousKeyboardState;
-
-#ifdef WIN32
+		std::vector<InputBinding>           m_Bindings;
+		std::vector<uint8_t>                m_PreviousKeyboardState;
 		std::vector<std::unique_ptr<Controller>> m_Controllers;
+
 		Controller* GetOrCreateController(unsigned int index);
-#endif
 	};
 }

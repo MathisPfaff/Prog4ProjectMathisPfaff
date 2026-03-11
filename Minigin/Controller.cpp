@@ -1,8 +1,11 @@
+#include "Controller.h"
+
+// ── Platform-specific implementation ─────────────────────────────────────────
+
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <Xinput.h>
-#include "Controller.h"
 
 namespace dae
 {
@@ -13,7 +16,7 @@ namespace dae
 			: m_ControllerIndex(controllerIndex)
 		{
 			ZeroMemory(&m_PreviousState, sizeof(XINPUT_STATE));
-			ZeroMemory(&m_CurrentState, sizeof(XINPUT_STATE));
+			ZeroMemory(&m_CurrentState,  sizeof(XINPUT_STATE));
 		}
 
 		void Update()
@@ -22,15 +25,15 @@ namespace dae
 			ZeroMemory(&m_CurrentState, sizeof(XINPUT_STATE));
 			XInputGetState(m_ControllerIndex, &m_CurrentState);
 
-			const WORD buttonChanges    = m_CurrentState.Gamepad.wButtons ^ m_PreviousState.Gamepad.wButtons;
-			m_ButtonsPressedThisFrame   = buttonChanges & m_CurrentState.Gamepad.wButtons;
-			m_ButtonsReleasedThisFrame  = buttonChanges & (~m_CurrentState.Gamepad.wButtons);
+			const WORD buttonChanges   = m_CurrentState.Gamepad.wButtons ^ m_PreviousState.Gamepad.wButtons;
+			m_ButtonsPressedThisFrame  = buttonChanges &  m_CurrentState.Gamepad.wButtons;
+			m_ButtonsReleasedThisFrame = buttonChanges & ~m_CurrentState.Gamepad.wButtons;
 		}
 
-		bool IsDown(unsigned int button) const     { return (m_CurrentState.Gamepad.wButtons & button) != 0; }
-		bool IsUp(unsigned int button) const       { return (m_CurrentState.Gamepad.wButtons & button) == 0; }
-		bool IsPressed(unsigned int button) const  { return (m_ButtonsPressedThisFrame & button) != 0; }
-		bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame & button) != 0; }
+		bool IsDown(unsigned int button) const     { return (m_CurrentState.Gamepad.wButtons  & button) != 0; }
+		bool IsUp(unsigned int button) const       { return (m_CurrentState.Gamepad.wButtons  & button) == 0; }
+		bool IsPressed(unsigned int button) const  { return (m_ButtonsPressedThisFrame        & button) != 0; }
+		bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame       & button) != 0; }
 
 	private:
 		unsigned int m_ControllerIndex;
@@ -39,7 +42,30 @@ namespace dae
 		WORD m_ButtonsPressedThisFrame{};
 		WORD m_ButtonsReleasedThisFrame{};
 	};
+}
 
+#else  // ── No-op stub for non-Windows platforms (Emscripten / web) ──────────
+
+namespace dae
+{
+	class Controller::ControllerImpl
+	{
+	public:
+		explicit ControllerImpl(unsigned int) {}
+		void Update() {}
+		bool IsDown(unsigned int) const     { return false; }
+		bool IsUp(unsigned int) const       { return true;  }
+		bool IsPressed(unsigned int) const  { return false; }
+		bool IsReleased(unsigned int) const { return false; }
+	};
+}
+
+#endif
+
+// ── Platform-independent forwarding ──────────────────────────────────────────
+
+namespace dae
+{
 	Controller::Controller(unsigned int controllerIndex)
 		: m_ControllerIndex(controllerIndex)
 		, m_pImpl(std::make_unique<ControllerImpl>(controllerIndex))
@@ -54,4 +80,3 @@ namespace dae
 	bool Controller::IsPressed(ControllerButton button) const  { return m_pImpl->IsPressed(static_cast<unsigned int>(button)); }
 	bool Controller::IsReleased(ControllerButton button) const { return m_pImpl->IsReleased(static_cast<unsigned int>(button)); }
 }
-#endif // WIN32

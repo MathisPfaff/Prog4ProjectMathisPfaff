@@ -1,6 +1,4 @@
 #pragma once
-
-#ifdef WIN32
 #include <memory>
 
 namespace dae
@@ -46,4 +44,3 @@ namespace dae
 		unsigned int m_ControllerIndex;
 	};
 }
-#endif // WIN32

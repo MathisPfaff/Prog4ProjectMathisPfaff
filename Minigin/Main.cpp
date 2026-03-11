@@ -59,9 +59,7 @@ static void load()
 	auto player2 = std::make_unique<dae::GameObject>();
 	player2->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
 	player2->SetLocalPosition(500.f, 300.f);
-#ifdef WIN32
 	auto* pPlayer2 = player2.get();
-#endif
 	scene.Add(std::move(player2));
 
 	constexpr float moveSpeed = 150.f;
@@ -73,13 +71,11 @@ static void load()
 	input.BindKeyboard(SDL_SCANCODE_A, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{ -1.f,  0.f }, moveSpeed));
 	input.BindKeyboard(SDL_SCANCODE_D, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  1.f,  0.f }, moveSpeed));
 
-#ifdef WIN32
 	// Controller bindings — Player 2
 	input.BindController(0, dae::Controller::ControllerButton::DPadUp,    dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f, -1.f }, moveSpeed));
 	input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }, moveSpeed));
 	input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }, moveSpeed));
 	input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }, moveSpeed));
-#endif
 }
 
 int main(int, char*[]) {
@@ -92,5 +88,5 @@ int main(int, char*[]) {
 #endif
 	dae::Minigin engine(data_location);
 	engine.Run(load);
-    return 0;
+	return 0;
 }

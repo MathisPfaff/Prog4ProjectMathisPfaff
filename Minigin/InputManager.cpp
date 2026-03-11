@@ -17,10 +17,8 @@ bool dae::InputManager::ProcessInput()
 	if (m_PreviousKeyboardState.empty())
 		m_PreviousKeyboardState.assign(numKeys, 0);
 
-#ifdef WIN32
 	for (auto& ctrl : m_Controllers)
 		ctrl->Update();
-#endif
 
 	for (auto& binding : m_Bindings)
 		if (binding.IsTriggered())
@@ -54,12 +52,6 @@ void dae::InputManager::BindKeyboard(SDL_Scancode key, KeyState state, std::uniq
 	});
 }
 
-void dae::InputManager::ClearBindings()
-{
-	m_Bindings.clear();
-}
-
-#ifdef WIN32
 void dae::InputManager::BindController(unsigned int controllerIndex,
 	Controller::ControllerButton button, KeyState state, std::unique_ptr<Command> command)
 {
@@ -90,4 +82,8 @@ dae::Controller* dae::InputManager::GetOrCreateController(unsigned int index)
 	m_Controllers.push_back(std::make_unique<Controller>(index));
 	return m_Controllers.back().get();
 }
-#endif
+
+void dae::InputManager::ClearBindings()
+{
+	m_Bindings.clear();
+}
