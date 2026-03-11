@@ -14,6 +14,8 @@
 #include "FPSComponent.h"
 #include "GameObject.h"
 #include "RotationComponent.h"
+#include "InputManager.h"
+#include "MoveCommand.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -46,21 +48,36 @@ static void load()
 	fpsCounter->AddComponent<dae::FPSComponent>();
 	scene.Add(std::move(fpsCounter));
 
-	// Test rotation component
+	// Player 1 — moved with keyboard (WASD)
+	auto player1 = std::make_unique<dae::GameObject>();
+	player1->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
+	player1->SetLocalPosition(300.f, 300.f);
+	auto* pPlayer1 = player1.get();
+	scene.Add(std::move(player1));
 
-	//auto pivot = std::make_unique<dae::GameObject>();
-	//pivot->SetLocalPosition(400.f, 388.f);
-	//pivot->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
-	//pivot->AddComponent<dae::RotationComponent>(180.f, glm::vec3{ 440.f, 388.f, 0.f });
-	//
-	//auto orbiter = std::make_unique<dae::GameObject>();
-	//orbiter->SetParent(pivot.get(), false);
-	//orbiter->SetLocalPosition(-50.f, 0.f);
-	//orbiter->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
-	//orbiter->AddComponent<dae::RotationComponent>(-270.f, orbiter->GetParent());
-	//
-	//scene.Add(std::move(pivot));
-	//scene.Add(std::move(orbiter));
+	// Player 2 — moved with Xbox controller DPad (controller 0)
+	auto player2 = std::make_unique<dae::GameObject>();
+	player2->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
+	player2->SetLocalPosition(500.f, 300.f);
+	auto* pPlayer2 = player2.get();
+	scene.Add(std::move(player2));
+
+	constexpr float moveSpeed = 150.f;
+	auto& input = dae::InputManager::GetInstance();
+
+	// Keyboard bindings — Player 1
+	input.BindKeyboard(SDL_SCANCODE_W, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f, -1.f }, moveSpeed));
+	input.BindKeyboard(SDL_SCANCODE_S, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f,  1.f }, moveSpeed));
+	input.BindKeyboard(SDL_SCANCODE_A, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{ -1.f,  0.f }, moveSpeed));
+	input.BindKeyboard(SDL_SCANCODE_D, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  1.f,  0.f }, moveSpeed));
+
+#ifdef WIN32
+	// Controller bindings — Player 2
+	input.BindController(0, dae::Controller::ControllerButton::DPadUp,    dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f, -1.f }, moveSpeed));
+	input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }, moveSpeed));
+	input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }, moveSpeed));
+	input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }, moveSpeed));
+#endif
 }
 
 int main(int, char*[]) {
@@ -75,3 +92,33 @@ int main(int, char*[]) {
 	engine.Run(load);
     return 0;
 }
+
+/*
+class Command
+{
+public:
+	virtual ~Command() = default;
+	virtual void Execute() = 0;
+};
+
+
+class GameActorCommand : public Command
+{
+	GameActor* m_pActor;
+protected:
+	GameActor* GetActor() const { return m_pActor; }
+public:
+	GameActorCommand(GameActor* actor);
+	virtual ~GameActorCommand();
+};
+
+class Fire : public GameActorCommand
+{
+	void Execute() override
+	{
+		GetActor()->FireWeapon();
+
+		// ...
+	}
+};
+*/

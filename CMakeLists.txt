@@ -32,7 +32,9 @@ add_executable(${TARGET_NAME} ${TARGET_PARAM}
   Minigin/FPSComponent.cpp
   Minigin/TextureComponent.cpp
   Minigin/RotationComponent.cpp
-  Minigin/ThrashTheCache1_2.cpp)
+  Minigin/ThrashTheCache1_2.cpp
+  Minigin/MoveCommand.cpp
+  Minigin/Controller.cpp)
 
 # enable c++20 features
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
@@ -266,4 +268,8 @@ else()
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${TARGET_NAME}>/Data"
   )
+endif()
+
+if(WIN32 AND NOT EMSCRIPTEN)
+  target_link_libraries("${TARGET_NAME}" PRIVATE xinput)
 endif()

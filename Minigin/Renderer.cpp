@@ -39,7 +39,7 @@ void dae::Renderer::Render() const
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 
-	RenderCacheExercisesUI();
+	//RenderCacheExercisesUI();
 
 	ImGui::Render();
 

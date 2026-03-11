@@ -31,6 +31,7 @@ namespace dae
 
 		void SetLocalPosition(float x, float y);
 		void SetLocalPosition(const glm::vec3& position);
+		const glm::vec3& GetLocalPosition() const { return m_transform.GetPosition(); }
 		const glm::vec3& GetWorldPosition();
 
 		GameObject() = default;
