@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <functional>
 #include "Singleton.h"
 #include "Command.h"
 
@@ -34,32 +35,18 @@ namespace dae
 		void ClearBindings();
 
 	private:
-		struct KeyboardBinding
+		struct InputBinding
 		{
-			SDL_Scancode key;
-			KeyState state;
+			std::function<bool()> IsTriggered;
 			std::unique_ptr<Command> command;
 		};
 
-		std::vector<KeyboardBinding> m_KeyboardBindings;
+		std::vector<InputBinding> m_Bindings;
 		std::vector<uint8_t> m_PreviousKeyboardState;
 
-		void ProcessKeyboardBindings();
-
 #ifdef WIN32
-		struct ControllerBinding
-		{
-			unsigned int controllerIndex;
-			Controller::ControllerButton button;
-			KeyState state;
-			std::unique_ptr<Command> command;
-		};
-
-		std::vector<ControllerBinding> m_ControllerBindings;
 		std::vector<std::unique_ptr<Controller>> m_Controllers;
-
 		Controller* GetOrCreateController(unsigned int index);
-		void ProcessControllerBindings();
 #endif
 	};
 }

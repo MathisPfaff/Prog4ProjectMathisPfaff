@@ -59,7 +59,9 @@ static void load()
 	auto player2 = std::make_unique<dae::GameObject>();
 	player2->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
 	player2->SetLocalPosition(500.f, 300.f);
+#ifdef WIN32
 	auto* pPlayer2 = player2.get();
+#endif
 	scene.Add(std::move(player2));
 
 	constexpr float moveSpeed = 150.f;
@@ -92,33 +94,3 @@ int main(int, char*[]) {
 	engine.Run(load);
     return 0;
 }
-
-/*
-class Command
-{
-public:
-	virtual ~Command() = default;
-	virtual void Execute() = 0;
-};
-
-
-class GameActorCommand : public Command
-{
-	GameActor* m_pActor;
-protected:
-	GameActor* GetActor() const { return m_pActor; }
-public:
-	GameActorCommand(GameActor* actor);
-	virtual ~GameActorCommand();
-};
-
-class Fire : public GameActorCommand
-{
-	void Execute() override
-	{
-		GetActor()->FireWeapon();
-
-		// ...
-	}
-};
-*/
