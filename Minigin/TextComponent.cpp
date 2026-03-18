@@ -21,6 +21,12 @@ namespace dae
 	{
 		if (m_needsUpdate)
 		{
+			if (m_text.empty())
+			{
+				m_needsUpdate = false;
+				return;
+			}
+
 			const auto surf = TTF_RenderText_Blended(m_font->GetFont(), m_text.c_str(), m_text.length(), m_color);
 			if (surf == nullptr)
 			{

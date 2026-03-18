@@ -39,7 +39,8 @@ add_executable(${TARGET_NAME} ${TARGET_PARAM}
   Minigin/Observer.cpp
   Minigin/GameActor.cpp
   Minigin/DamageCommand.cpp
-  Minigin/HealthDisplayComponent.cpp)
+  Minigin/ScoreComponent.cpp
+  Minigin/TextDisplayComponent.cpp)
 
 # enable c++20 features
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
