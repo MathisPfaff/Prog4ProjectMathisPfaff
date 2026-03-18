@@ -40,7 +40,7 @@ namespace dae
 
 	private:
 		class ControllerImpl;
-		unsigned int m_ControllerIndex;         // declared first
-		std::unique_ptr<ControllerImpl> m_pImpl; // declared second
+		unsigned int m_ControllerIndex;
+		std::unique_ptr<ControllerImpl> m_pImpl;
 	};
 }

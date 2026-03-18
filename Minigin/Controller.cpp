@@ -45,7 +45,7 @@ namespace dae
 }
 
 #elif defined(__EMSCRIPTEN__)
-#include <SDL3/SDL.h>  // ← this was wrongly <emscripten/html5.h> before
+#include <SDL3/SDL.h>
 
 namespace dae
 {

@@ -16,6 +16,9 @@
 #include "RotationComponent.h"
 #include "InputManager.h"
 #include "MoveCommand.h"
+#include "HealthComponent.h"
+#include "HealthDisplayComponent.h"
+#include "DamageCommand.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -48,34 +51,57 @@ static void load()
 	fpsCounter->AddComponent<dae::FPSComponent>();
 	scene.Add(std::move(fpsCounter));
 
-	// Player 1 — moved with keyboard (WASD)
+	auto uiFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 20);
+
+	// --- Player 1 (keyboard WASD, controller 0 Button B to take damage) ---
 	auto player1 = std::make_unique<dae::GameObject>();
 	player1->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
 	player1->SetLocalPosition(300.f, 300.f);
+	auto* healthComp1 = player1->AddComponent<dae::HealthComponent>(3);
 	auto* pPlayer1 = player1.get();
 	scene.Add(std::move(player1));
 
-	// Player 2 — moved with Xbox controller DPad (controller 0)
+	auto hud1 = std::make_unique<dae::GameObject>();
+	hud1->SetLocalPosition(10.f, 40.f);
+	hud1->AddComponent<dae::TextComponent>("P1 Lives: 3", uiFont, SDL_Color{ 255, 100, 100, 255 });
+	hud1->AddComponent<dae::HealthDisplayComponent>(healthComp1, "P1 Lives: ");
+	scene.Add(std::move(hud1));
+
+	// --- Player 2 (controller 0 DPad, controller 0 Button A to take damage) ---
 	auto player2 = std::make_unique<dae::GameObject>();
 	player2->AddComponent<dae::TextureComponent>("DigDugBasicEnemy.png");
 	player2->SetLocalPosition(500.f, 300.f);
+	auto* healthComp2 = player2->AddComponent<dae::HealthComponent>(3);
 	auto* pPlayer2 = player2.get();
 	scene.Add(std::move(player2));
+
+	auto hud2 = std::make_unique<dae::GameObject>();
+	hud2->SetLocalPosition(10.f, 65.f);
+	hud2->AddComponent<dae::TextComponent>("P2 Lives: 3", uiFont, SDL_Color{ 100, 150, 255, 255 });
+	hud2->AddComponent<dae::HealthDisplayComponent>(healthComp2, "P2 Lives: ");
+	scene.Add(std::move(hud2));
 
 	constexpr float moveSpeed = 150.f;
 	auto& input = dae::InputManager::GetInstance();
 
-	// Keyboard bindings — Player 1
+	// Keyboard — Player 1 movement
 	input.BindKeyboard(SDL_SCANCODE_W, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f, -1.f }, moveSpeed));
 	input.BindKeyboard(SDL_SCANCODE_S, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f,  1.f }, moveSpeed));
 	input.BindKeyboard(SDL_SCANCODE_A, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{ -1.f,  0.f }, moveSpeed));
 	input.BindKeyboard(SDL_SCANCODE_D, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  1.f,  0.f }, moveSpeed));
 
-	// Controller bindings — Player 2
+	// Keyboard Button B — Player 1 takes damage
+	input.BindKeyboard(SDL_SCANCODE_B, dae::KeyState::Pressed, std::make_unique<dae::DamageCommand>(healthComp1));
+
+	// Controller 0 DPad — Player 2 movement
 	input.BindController(0, dae::Controller::ControllerButton::DPadUp,    dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f, -1.f }, moveSpeed * 2));
 	input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }, moveSpeed * 2));
 	input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }, moveSpeed * 2));
 	input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }, moveSpeed * 2));
+
+	// Controller 0 Button A — Player 2 takes damage
+	input.BindController(0, dae::Controller::ControllerButton::ButtonA, dae::KeyState::Pressed,
+		std::make_unique<dae::DamageCommand>(healthComp2));
 }
 
 int main(int, char*[]) {
