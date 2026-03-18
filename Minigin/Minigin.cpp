@@ -14,6 +14,7 @@
 #pragma warning (disable:4996)
 #include <steam_api.h>
 #pragma warning (pop)
+#include "SteamAchievements.h"
 #endif
 
 #include <SDL3/SDL.h>
@@ -48,17 +49,11 @@ void LoopCallback(void* arg)
 }
 #endif
 
-// Why bother with this? Because sometimes students have a different SDL version installed on their pc.
-// That is not a problem unless for some reason the dll's from this project are not copied next to the exe.
-// These entries in the debug output help to identify that issue.
 void PrintSDLVersion()
 {
 	LogSDLVersion("Compiled with SDL", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
 	int version = SDL_GetVersion();
 	LogSDLVersion("Linked with SDL ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
-	// LogSDLVersion("Compiled with SDL_image ",SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_MICRO_VERSION);
-	// version = IMG_Version();
-	// LogSDLVersion("Linked with SDL_image ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
 	LogSDLVersion("Compiled with SDL_ttf ",	SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION,SDL_TTF_MICRO_VERSION);
 	version = TTF_Version();
 	LogSDLVersion("Linked with SDL_ttf ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version),	SDL_VERSIONNUM_MICRO(version));
@@ -72,6 +67,10 @@ dae::Minigin::Minigin(const std::filesystem::path& dataPath)
 	if (!SteamAPI_Init())
 		throw std::runtime_error(std::string("Fatal Error - Steam must be running to play this game (SteamAPI_Init() failed)."));
 	std::cout << "Steam initialized. Playing as: " << SteamFriends()->GetPersonaName() << "\n";
+
+	// SDK 1.57+: stats are fetched automatically — no RequestCurrentStats() needed.
+	// Init registers the UserStatsReceived_t callback so Unlock() knows when they are ready.
+	dae::SteamAchievements::GetInstance().Init();
 #endif
 	
 	if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
