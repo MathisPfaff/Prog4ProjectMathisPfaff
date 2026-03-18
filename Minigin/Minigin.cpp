@@ -9,6 +9,13 @@
 #include <windows.h>
 #endif
 
+#if USE_STEAMWORKS
+#pragma warning (push)
+#pragma warning (disable:4996)
+#include <steam_api.h>
+#pragma warning (pop)
+#endif
+
 #include <SDL3/SDL.h>
 //#include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -60,6 +67,12 @@ void PrintSDLVersion()
 dae::Minigin::Minigin(const std::filesystem::path& dataPath)
 {
 	PrintSDLVersion();
+
+#if USE_STEAMWORKS
+	if (!SteamAPI_Init())
+		throw std::runtime_error(std::string("Fatal Error - Steam must be running to play this game (SteamAPI_Init() failed)."));
+	std::cout << "Steam initialized. Playing as: " << SteamFriends()->GetPersonaName() << "\n";
+#endif
 	
 	if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
 	{
@@ -88,6 +101,10 @@ dae::Minigin::~Minigin()
 	SDL_DestroyWindow(g_window);
 	g_window = nullptr;
 	SDL_Quit();
+
+#if USE_STEAMWORKS
+	SteamAPI_Shutdown();
+#endif
 }
 
 void dae::Minigin::Run(const std::function<void()>& load)
@@ -108,6 +125,10 @@ void dae::Minigin::RunOneFrame()
 	GameTime::GetInstance().SetDeltaTime(delta_time);
 	last_time = current_time;
 	lag += delta_time;
+
+#if USE_STEAMWORKS
+	SteamAPI_RunCallbacks();
+#endif
 	
 	doContinue = InputManager::GetInstance().ProcessInput();
 	while (lag >= fixed_time_step)
