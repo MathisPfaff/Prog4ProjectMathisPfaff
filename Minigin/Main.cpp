@@ -19,6 +19,7 @@
 #include "ScoreComponent.h"
 #include "TextDisplayComponent.h"
 #include "DamageCommand.h"
+#include "SteamAchievementObserver.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -116,6 +117,12 @@ static void load()
 	//               scoreComp2 observes healthComp1 (P1 dies → P2 gets 500)
 	healthComp1->AddObserver(scoreComp2);
 	healthComp2->AddObserver(scoreComp1);
+
+#if USE_STEAMWORKS
+	// Steam achievement observers — static so they outlive load() for the full session
+	static dae::SteamAchievementObserver steamObs1(scoreComp1);
+	static dae::SteamAchievementObserver steamObs2(scoreComp2);
+#endif
 
 	constexpr float moveSpeed = 150.f;
 	auto& input = dae::InputManager::GetInstance();
