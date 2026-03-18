@@ -55,7 +55,6 @@ static void load()
 	auto smallFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 16);
 
 	// --- Controls display ---
-	constexpr SDL_Color white  { 255, 255, 255, 255 };
 	constexpr SDL_Color p1Color{ 255, 100, 100, 255 };
 	constexpr SDL_Color p2Color{ 100, 150, 255, 255 };
 
