@@ -20,7 +20,7 @@ namespace dae
 		std::vector<std::unique_ptr<BaseComponent>> m_pDeleteComponents;
 
 		GameObject* m_pParent = nullptr;
-		std::vector<GameObject*> m_pChildren;
+		std::vector<std::unique_ptr<GameObject>> m_pChildren;
 
 		bool m_MarkedForDestroy{};
 	public:
@@ -35,7 +35,7 @@ namespace dae
 		const glm::vec3& GetWorldPosition();
 
 		GameObject() = default;
-		~GameObject();
+		~GameObject() = default;
 		GameObject(const GameObject& other) = delete;
 		GameObject(GameObject&& other) = delete;
 		GameObject& operator=(const GameObject& other) = delete;
@@ -50,6 +50,8 @@ namespace dae
 		int GetChildCount() const { return static_cast<int>(m_pChildren.size()); }
 		GameObject* GetChild(int index) const;
 		bool IsChild(GameObject* child) const;
+
+		void AddChild(std::unique_ptr<GameObject> child);
 
 		void SetPositionDirty();
 
@@ -77,7 +79,6 @@ namespace dae
 		void RemoveComponent(BaseComponent* pComponent);
 
 	private:
-		void AddChild(GameObject* child);
-		void RemoveChild(GameObject* child);
+		std::unique_ptr<GameObject> RemoveChild(GameObject* child);
 	};
 }

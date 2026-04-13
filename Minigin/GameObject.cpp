@@ -3,27 +3,16 @@
 
 namespace dae
 {
-    GameObject::~GameObject()
-    {
-        if (m_pParent)
-        {
-            m_pParent->RemoveChild(this);
-        }
-
-        for (auto* child : m_pChildren)
-        {
-            child->m_pParent = nullptr;
-        }
-
-        m_pComponents.clear();
-        m_pDeleteComponents.clear();
-    }
-
     void GameObject::FixedUpdate(float fixed_time_step)
     {
         for (const auto& component : m_pComponents)
         {
             component->FixedUpdate(fixed_time_step);
+        }
+
+        for (const auto& child : m_pChildren)
+        {
+            child->FixedUpdate(fixed_time_step);
         }
     }
 
@@ -32,6 +21,11 @@ namespace dae
         for (const auto& component : m_pComponents)
         {
             component->Update();
+        }
+
+        for (const auto& child : m_pChildren)
+        {
+            child->Update();
         }
     }
 
@@ -51,6 +45,17 @@ namespace dae
         {
             component->LateUpdate();
         }
+
+        for (const auto& child : m_pChildren)
+        {
+            child->LateUpdate();
+        }
+
+        auto it = std::remove_if(m_pChildren.begin(), m_pChildren.end(),
+            [](const std::unique_ptr<GameObject>& child) {
+                return child->IsMarkedForDestroy();
+            });
+        m_pChildren.erase(it, m_pChildren.end());
     }
 
     void GameObject::Render() const
@@ -58,6 +63,11 @@ namespace dae
         for (const auto& component : m_pComponents)
         {
             component->Render();
+        }
+
+        for (const auto& child : m_pChildren)
+        {
+            child->Render();
         }
     }
 
@@ -94,7 +104,7 @@ namespace dae
     void GameObject::SetPositionDirty()
     {
         m_PositionIsDirty = true;
-        for (auto* child : m_pChildren)
+        for (const auto& child : m_pChildren)
         {
             child->SetPositionDirty();
         }
@@ -102,10 +112,7 @@ namespace dae
 
     void GameObject::SetParent(GameObject* parent, bool keepWorldPosition)
     {
-        if (parent == this || m_pParent == parent || IsChild(parent))
-        {
-            return;
-        }
+        if (parent == m_pParent || parent == this || (parent && IsChild(parent))) return;
 
         if (parent == nullptr)
         {
@@ -120,14 +127,16 @@ namespace dae
 
         if (m_pParent)
         {
-            m_pParent->RemoveChild(this);
+            auto self = m_pParent->RemoveChild(this);
+            m_pParent = parent;
+            if (m_pParent)
+            {
+                m_pParent->AddChild(std::move(self));
+            }
         }
-
-        m_pParent = parent;
-
-        if (m_pParent)
+        else
         {
-            m_pParent->AddChild(this);
+            m_pParent = parent;
         }
     }
 
@@ -137,39 +146,38 @@ namespace dae
         {
             return nullptr;
         }
-        return m_pChildren[index];
+        return m_pChildren[index].get();
     }
 
-    void GameObject::AddChild(GameObject* child)
+    void GameObject::AddChild(std::unique_ptr<GameObject> child)
     {
-        m_pChildren.emplace_back(child);
+        child->m_pParent = this;
+        m_pChildren.push_back(std::move(child));
     }
 
-    void GameObject::RemoveChild(GameObject* child)
+    std::unique_ptr<GameObject> GameObject::RemoveChild(GameObject* child)
     {
-        auto it = std::remove(m_pChildren.begin(), m_pChildren.end(), child);
+        auto it = std::find_if(m_pChildren.begin(), m_pChildren.end(),
+            [child](const std::unique_ptr<GameObject>& c) {
+                return c.get() == child;
+            });
+
         if (it != m_pChildren.end())
         {
-            m_pChildren.erase(it, m_pChildren.end());
-            if (child->m_pParent == this)
-            {
-				child->m_pParent = nullptr;
-            }
+            auto extracted = std::move(*it);
+            extracted->m_pParent = nullptr;
+            m_pChildren.erase(it);
+            return extracted;
         }
+        return nullptr;
     }
 
     bool GameObject::IsChild(GameObject* child) const
     {
-        for (auto* c : m_pChildren)
+        for (const auto& c : m_pChildren)
         {
-            if (c == child) 
-            { 
-                return true; 
-            }
-            if (c->IsChild(child)) 
-            {
-                return true;
-            }
+            if (c.get() == child) return true;
+            if (c->IsChild(child)) return true;
         }
         return false;
     }
