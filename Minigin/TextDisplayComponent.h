@@ -25,7 +25,7 @@ namespace dae
 		void LateUpdate() override {}
 		void Render() const override {}
 
-		void OnNotify(BaseComponent*, Event) override { m_Dirty = true; }
+		void OnNotify(BaseComponent*, unsigned int) override { m_Dirty = true; }
 
 	private:
 		std::function<std::string()> m_TextGetter;
