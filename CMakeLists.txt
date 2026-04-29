@@ -94,10 +94,8 @@ if(NOT SDL3_mixer_FOUND)
     FetchContent_MakeAvailable(SDL3_mixer)
     list(PREPEND CMAKE_PREFIX_PATH "${sdl3_mixer_SOURCE_DIR}")
     find_package(SDL3_mixer CONFIG REQUIRED)
-  elseif(EMSCRIPTEN)
-    add_compile_options(-sUSE_SDL_MIXER=2)
-    add_link_options(-sUSE_SDL_MIXER=2)
   else()
+    # Both Linux and Emscripten: build from source
     FetchContent_Declare(
       SDL3_mixer
       GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
@@ -106,6 +104,17 @@ if(NOT SDL3_mixer_FOUND)
       GIT_PROGRESS TRUE
     )
     set(SDL3MIXER_INSTALL OFF)
+    set(SDL3MIXER_VENDORED ON)
+    if(EMSCRIPTEN)
+      # Disable format decoders that require native libs not available in WASM
+      set(SDL3MIXER_MP3     OFF)
+      set(SDL3MIXER_OGG     OFF)
+      set(SDL3MIXER_FLAC    OFF)
+      set(SDL3MIXER_OPUS    OFF)
+      set(SDL3MIXER_MOD     OFF)
+      set(SDL3MIXER_WAVPACK OFF)
+      set(SDL3MIXER_WAV     ON)  # WAV always works
+    endif()
     FetchContent_MakeAvailable(SDL3_mixer)
   endif()
 endif()
@@ -187,7 +196,7 @@ target_include_directories(minigin PUBLIC
 target_link_libraries(minigin PUBLIC
   SDL3::SDL3
   SDL3_ttf::SDL3_ttf
-  $<$<NOT:$<BOOL:${EMSCRIPTEN}>>:SDL3_mixer::SDL3_mixer>
+  SDL3_mixer::SDL3_mixer
   imgui
   glm::glm
   ${VLD_LIBRARIES}

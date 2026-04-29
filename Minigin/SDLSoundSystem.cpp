@@ -1,9 +1,5 @@
 #include "SDLSoundSystem.h"
 
-// ── Platform-specific implementation ─────────────────────────────────────────
-
-#ifndef __EMSCRIPTEN__
-
 #include <SDL3_mixer/SDL_mixer.h>
 #include <unordered_map>
 #include <queue>
@@ -147,68 +143,6 @@ namespace dae
 		}
 	};
 }
-
-#elif defined(__EMSCRIPTEN__)
-
-#include <SDL_mixer.h>
-#include <unordered_map>
-#include <iostream>
-
-namespace dae
-{
-	struct SDLSoundSystem::Impl
-	{
-		std::unordered_map<SoundId, Mix_Chunk*> m_chunks{};
-		std::unordered_map<SoundId, Mix_Music*> m_music{};
-
-		Impl()
-		{
-			if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
-				std::cerr << "[SDLSoundSystem] Mix_OpenAudio failed: " << Mix_GetError() << "\n";
-		}
-
-		~Impl()
-		{
-			for (auto& [id, chunk] : m_chunks) Mix_FreeChunk(chunk);
-			for (auto& [id, music] : m_music)  Mix_FreeMusic(music);
-			Mix_CloseAudio();
-		}
-
-		// Sound (SFX) — loaded as Mix_Chunk
-		void LoadAudio(SoundId id, const std::string& filePath)
-		{
-			Mix_Chunk* chunk = Mix_LoadWAV(filePath.c_str());
-			if (chunk) { m_chunks[id] = chunk; return; }
-
-			// Fallback: try as music (e.g. mp3)
-			Mix_Music* music = Mix_LoadMUS(filePath.c_str());
-			if (music) { m_music[id] = music; return; }
-
-			std::cerr << "[SDLSoundSystem] Failed to load audio: " << filePath << " - " << Mix_GetError() << "\n";
-		}
-
-		void PlaySound(SoundId id, float volume)
-		{
-			auto it = m_chunks.find(id);
-			if (it == m_chunks.end()) { std::cerr << "[SDLSoundSystem] Sound id " << id << " not loaded.\n"; return; }
-			Mix_VolumeChunk(it->second, static_cast<int>(volume * MIX_MAX_VOLUME));
-			Mix_PlayChannel(-1, it->second, 0);
-		}
-
-		void PlayMusic(SoundId id, float volume, bool loop)
-		{
-			auto it = m_music.find(id);
-			if (it == m_music.end()) { std::cerr << "[SDLSoundSystem] Music id " << id << " not loaded.\n"; return; }
-			Mix_VolumeMusic(static_cast<int>(volume * MIX_MAX_VOLUME));
-			Mix_PlayMusic(it->second, loop ? -1 : 1);
-		}
-
-		void StopMusic() { Mix_HaltMusic(); }
-		void StopAll()   { Mix_HaltChannel(-1); Mix_HaltMusic(); }
-	};
-}
-
-#endif
 
 // ── Platform-independent forwarding ──────────────────────────────────────────
 
