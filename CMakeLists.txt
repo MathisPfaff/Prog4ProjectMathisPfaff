@@ -7,6 +7,9 @@ endif()
 
 include(FetchContent)
 
+# Prevent any fetched dependency from turning everything into shared libs
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
 # add glm
 find_package(glm CONFIG QUIET)
 if(NOT glm_FOUND)
@@ -78,6 +81,35 @@ if(NOT SDL3_ttf_FOUND)
   endif()
 endif()
 
+# Add SDL3_mixer
+find_package(SDL3_mixer CONFIG QUIET)
+if(NOT SDL3_mixer_FOUND)
+  if(WIN32 AND NOT EMSCRIPTEN)
+    FetchContent_Declare(
+      SDL3_mixer
+      URL https://www.libsdl.org/projects/SDL_mixer/release/SDL3_mixer-devel-3.2.0-VC.zip
+      DOWNLOAD_NO_PROGRESS ON
+      DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads
+    )
+    FetchContent_MakeAvailable(SDL3_mixer)
+    list(PREPEND CMAKE_PREFIX_PATH "${sdl3_mixer_SOURCE_DIR}")
+    find_package(SDL3_mixer CONFIG REQUIRED)
+  elseif(EMSCRIPTEN)
+    add_compile_options(-sUSE_SDL_MIXER=2)
+    add_link_options(-sUSE_SDL_MIXER=2)
+  else()
+    FetchContent_Declare(
+      SDL3_mixer
+      GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+      GIT_TAG release-3.2.0
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
+    set(SDL3MIXER_INSTALL OFF)
+    FetchContent_MakeAvailable(SDL3_mixer)
+  endif()
+endif()
+
 # Dear ImGui
 FetchContent_Declare(
   imgui
@@ -137,6 +169,8 @@ add_library(minigin STATIC
   Minigin/TextDisplayComponent.cpp
   Minigin/Subject.cpp
   Minigin/Hash.h
+  Minigin/ISoundSystem.h
+  Minigin/NullSoundSystem.h
 )
 
 target_compile_features(minigin PUBLIC cxx_std_20)
@@ -150,6 +184,7 @@ target_include_directories(minigin PUBLIC
 target_link_libraries(minigin PUBLIC
   SDL3::SDL3
   SDL3_ttf::SDL3_ttf
+  $<$<NOT:$<BOOL:${EMSCRIPTEN}>>:SDL3_mixer::SDL3_mixer>
   imgui
   glm::glm
   ${VLD_LIBRARIES}
@@ -212,7 +247,7 @@ elseif(WIN32)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${DIGDUG_TARGET})
   set_target_properties(${DIGDUG_TARGET} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>")
 
-  foreach(dllTarget IN ITEMS SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+   foreach(dllTarget IN ITEMS SDL3::SDL3 SDL3_ttf::SDL3_ttf SDL3_mixer::SDL3_mixer)
     add_custom_command(
       TARGET ${DIGDUG_TARGET} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
