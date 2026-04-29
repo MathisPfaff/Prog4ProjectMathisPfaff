@@ -5,48 +5,8 @@ if(EMSCRIPTEN)
   message("Using Emscripten!")
 endif()
 
-if(EMSCRIPTEN)
-  set(TARGET_NAME minigin_web)
-  set(TARGET_PARAM )
-else()
-  set(TARGET_NAME minigin)
-  set(TARGET_PARAM WIN32)
-endif()
-
-# list source files here
-add_executable(${TARGET_NAME} ${TARGET_PARAM}
-  Minigin/Font.cpp
-  Minigin/GameObject.cpp
-  Minigin/InputManager.cpp
-  Minigin/Main.cpp
-  Minigin/Minigin.cpp
-  Minigin/Renderer.cpp
-  Minigin/ResourceManager.cpp
-  Minigin/Scene.cpp
-  Minigin/SceneManager.cpp
-  Minigin/TextComponent.cpp
-  Minigin/Texture2D.cpp
-  Minigin/Transform.cpp
-  Minigin/GameTime.cpp
-  Minigin/BaseComponent.cpp
-  Minigin/FPSComponent.cpp
-  Minigin/TextureComponent.cpp
-  Minigin/RotationComponent.cpp
-  Minigin/ThrashTheCache1_2.cpp
-  Minigin/MoveCommand.cpp
-  Minigin/Controller.cpp
-  Minigin/HealthComponent.cpp
-  Minigin/Observer.cpp
-  Minigin/DamageCommand.cpp
-  Minigin/ScoreComponent.cpp
-  Minigin/TextDisplayComponent.cpp
-  Minigin/Subject.cpp
-  Minigin/Hash.h)
-
-# enable c++20 features
-target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
-
 include(FetchContent)
+
 # add glm
 find_package(glm CONFIG QUIET)
 if(NOT glm_FOUND)
@@ -136,14 +96,11 @@ add_library(imgui STATIC
   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
 )
-
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${sdl3_SOURCE_DIR}/include)
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
-# enable c++20 features
 target_compile_features(imgui PUBLIC cxx_std_20)
 
 if (WIN32)
-  # Add VLD (Visual Leak Detector) for memory leak detection on Windows
   find_package(VLD CONFIG)
 endif()
 
@@ -151,13 +108,46 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/steam")
 find_package(Steamworks QUIET)
 
-target_include_directories("${TARGET_NAME}" PUBLIC
+# -------------------------------------------------------
+# Engine: Minigin static library
+# -------------------------------------------------------
+add_library(minigin STATIC
+  Minigin/Font.cpp
+  Minigin/GameObject.cpp
+  Minigin/InputManager.cpp
+  Minigin/Minigin.cpp
+  Minigin/Renderer.cpp
+  Minigin/ResourceManager.cpp
+  Minigin/Scene.cpp
+  Minigin/SceneManager.cpp
+  Minigin/TextComponent.cpp
+  Minigin/Texture2D.cpp
+  Minigin/Transform.cpp
+  Minigin/GameTime.cpp
+  Minigin/BaseComponent.cpp
+  Minigin/FPSComponent.cpp
+  Minigin/TextureComponent.cpp
+  Minigin/RotationComponent.cpp
+  Minigin/MoveCommand.cpp
+  Minigin/Controller.cpp
+  Minigin/HealthComponent.cpp
+  Minigin/Observer.cpp
+  Minigin/DamageCommand.cpp
+  Minigin/ScoreComponent.cpp
+  Minigin/TextDisplayComponent.cpp
+  Minigin/Subject.cpp
+  Minigin/Hash.h
+)
+
+target_compile_features(minigin PUBLIC cxx_std_20)
+
+target_include_directories(minigin PUBLIC
   ${CMAKE_SOURCE_DIR}/Minigin/
   ${imgui_SOURCE_DIR}
   ${VLD_INCLUDE_DIR}
 )
 
-target_link_libraries("${TARGET_NAME}" PUBLIC
+target_link_libraries(minigin PUBLIC
   SDL3::SDL3
   SDL3_ttf::SDL3_ttf
   imgui
@@ -165,118 +155,123 @@ target_link_libraries("${TARGET_NAME}" PUBLIC
   ${VLD_LIBRARIES}
 )
 
+if(WIN32 AND NOT EMSCRIPTEN)
+  target_link_libraries(minigin PRIVATE xinput)
+endif()
+
 if(MSVC)
-  # compile at warning level 4 + treat warnings as errors
-  target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
+  target_compile_options(minigin PRIVATE /W4 /WX)
 else()
-  target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -Werror)
+  target_compile_options(minigin PRIVATE -Wall -Wextra -Werror)
+endif()
+
+if(Steamworks_FOUND)
+  target_link_libraries(minigin PUBLIC Steamworks::Steamworks)
+  target_compile_definitions(minigin PRIVATE USE_STEAMWORKS)
+endif()
+
+# -------------------------------------------------------
+# Game: DigDug executable
+# -------------------------------------------------------
+if(EMSCRIPTEN)
+  set(DIGDUG_TARGET digdug_web)
+  set(DIGDUG_PARAM )
+else()
+  set(DIGDUG_TARGET digdug)
+  set(DIGDUG_PARAM WIN32)
+endif()
+
+add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
+  DigDug/Main.cpp
+)
+
+target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)
+
+target_link_libraries(${DIGDUG_TARGET} PRIVATE minigin)
+
+if(MSVC)
+  target_compile_options(${DIGDUG_TARGET} PRIVATE /W4 /WX)
+else()
+  target_compile_options(${DIGDUG_TARGET} PRIVATE -Wall -Wextra -Werror)
 endif()
 
 if(EMSCRIPTEN)
   set(EMSCRIPTEN_COMPILE_FLAGS "${EMSCRIPTEN_LINK_FLAGS} -g")
   set(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} -sUSE_FREETYPE=1 -sUSE_HARFBUZZ=1 -g -sALLOW_MEMORY_GROWTH --preload-file \"${CMAKE_SOURCE_DIR}/Data@/\"")
-
-  # Use the Emscripten toolchain
   set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmscriptenToolchain.cmake)
-
-  # Additional settings for Emscripten build
-  set_target_properties(${TARGET_NAME} PROPERTIES
-      COMPILE_FLAGS "${EMSCRIPTEN_COMPILE_FLAGS}"
-      LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS}"
+  set_target_properties(${DIGDUG_TARGET} PROPERTIES
+    COMPILE_FLAGS "${EMSCRIPTEN_COMPILE_FLAGS}"
+    LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS}"
   )
-
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/web" "$<TARGET_FILE_DIR:${TARGET_NAME}>/"
+  add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/web" "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/"
   )
-
-  # Have emscripten generate a html page too.
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
 elseif(WIN32)
-  # Set minigin as the default startup project
-  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${TARGET_NAME})
-  # Set working directory to output folder
-  set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${TARGET_NAME}>")
+  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${DIGDUG_TARGET})
+  set_target_properties(${DIGDUG_TARGET} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>")
 
-  # Copy SDL dlls to output folder
-  set(SDL_RUNTIME_DLLS
-    SDL3::SDL3
-    SDL3_ttf::SDL3_ttf
-  )
-
-  foreach(dllTarget IN LISTS SDL_RUNTIME_DLLS)
+  foreach(dllTarget IN ITEMS SDL3::SDL3 SDL3_ttf::SDL3_ttf)
     add_custom_command(
-      TARGET ${TARGET_NAME} POST_BUILD
+      TARGET ${DIGDUG_TARGET} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:${dllTarget}>"
-          "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+          "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>"
       VERBATIM
     )
   endforeach()
 
   if(Steamworks_FOUND)
-    target_link_libraries("${TARGET_NAME}" PUBLIC Steamworks::Steamworks)
-    target_compile_definitions(${TARGET_NAME} PRIVATE USE_STEAMWORKS)
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E copy "${Steamworks_RUNTIME_DLL}" "$<TARGET_FILE_DIR:${TARGET_NAME}>")
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E echo "480" > "$<TARGET_FILE_DIR:${TARGET_NAME}>/steam_appid.txt"
-      COMMENT "Generating steam_appid.txt"
+    add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E copy "${Steamworks_RUNTIME_DLL}" "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>")
+    add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E echo "480" > "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/steam_appid.txt"
     )
   endif()
 
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${TARGET_NAME}>/Data"
+  add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/Data"
   )
+
 elseif(APPLE)
-  set_target_properties(${TARGET_NAME} PROPERTIES
+  set_target_properties(${DIGDUG_TARGET} PROPERTIES
     MACOSX_BUNDLE TRUE
     INSTALL_RPATH "@executable_path/../Frameworks"
     BUILD_WITH_INSTALL_RPATH TRUE
   )
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Frameworks"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL3::SDL3-shared>" "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Frameworks/"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL3_ttf::SDL3_ttf-shared>" "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Frameworks/"
-    COMMAND install_name_tool -change "@rpath/libSDL3_ttf.0.dylib" "@executable_path/../Frameworks/libSDL3_ttf.0.2.2.dylib" "$<TARGET_FILE:${TARGET_NAME}>"
-    COMMAND install_name_tool -change "@rpath/libSDL3.0.dylib" "@executable_path/../Frameworks/libSDL3.0.dylib" "$<TARGET_FILE:${TARGET_NAME}>"
+  add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_BUNDLE_DIR:${DIGDUG_TARGET}>/Contents/Frameworks"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL3::SDL3-shared>" "$<TARGET_BUNDLE_DIR:${DIGDUG_TARGET}>/Contents/Frameworks/"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL3_ttf::SDL3_ttf-shared>" "$<TARGET_BUNDLE_DIR:${DIGDUG_TARGET}>/Contents/Frameworks/"
+    COMMAND install_name_tool -change "@rpath/libSDL3_ttf.0.dylib" "@executable_path/../Frameworks/libSDL3_ttf.0.2.2.dylib" "$<TARGET_FILE:${DIGDUG_TARGET}>"
+    COMMAND install_name_tool -change "@rpath/libSDL3.0.dylib" "@executable_path/../Frameworks/libSDL3.0.dylib" "$<TARGET_FILE:${DIGDUG_TARGET}>"
   )
 
   if(Steamworks_FOUND)
-    target_link_libraries("${TARGET_NAME}" PUBLIC Steamworks::Steamworks)
-    target_compile_definitions(${TARGET_NAME} PRIVATE USE_STEAMWORKS)
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${Steamworks_LIBRARIES}" "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Frameworks/"
+    add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${Steamworks_LIBRARIES}" "$<TARGET_BUNDLE_DIR:${DIGDUG_TARGET}>/Contents/Frameworks/"
     )
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E echo "480" > "$<TARGET_FILE_DIR:${TARGET_NAME}>/steam_appid.txt"
-      COMMENT "Generating steam_appid.txt"
+    add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E echo "480" > "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/steam_appid.txt"
     )
   endif()
 
-  # Copy Data folder to output directory after build
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${TARGET_NAME}>/Data"
+  add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/Data"
   )
+
 else()
- if(Steamworks_FOUND)
-    target_link_libraries("${TARGET_NAME}" PUBLIC Steamworks::Steamworks)
-    target_compile_definitions(${TARGET_NAME} PRIVATE USE_STEAMWORKS)
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${Steamworks_LIBRARIES}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+  if(Steamworks_FOUND)
+    add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${Steamworks_LIBRARIES}" "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>"
     )
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E echo "480" > "$<TARGET_FILE_DIR:${TARGET_NAME}>/steam_appid.txt"
-      COMMENT "Generating steam_appid.txt"
+    add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E echo "480" > "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/steam_appid.txt"
     )
   endif()
 
-  # Copy Data folder to output directory after build
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${TARGET_NAME}>/Data"
+  add_custom_command(TARGET ${DIGDUG_TARGET} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Data" "$<TARGET_FILE_DIR:${DIGDUG_TARGET}>/Data"
   )
-endif()
-
-if(WIN32 AND NOT EMSCRIPTEN)
-  target_link_libraries("${TARGET_NAME}" PRIVATE xinput)
 endif()
