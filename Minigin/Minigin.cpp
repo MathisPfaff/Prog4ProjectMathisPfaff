@@ -17,6 +17,9 @@
 #include "SteamAchievements.h"
 #endif
 
+#include "ServiceLocator.h"
+#include "SDLSoundSystem.h"
+#include "NullSoundSystem.h"
 #include <SDL3/SDL.h>
 //#include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -92,6 +95,8 @@ dae::Minigin::Minigin(const std::filesystem::path& dataPath)
 
 	Renderer::GetInstance().Init(g_window);
 	ResourceManager::GetInstance().Init(dataPath);
+
+	ServiceLocator::RegisterSoundSystem(std::make_unique<SDLSoundSystem>());
 }
 
 dae::Minigin::~Minigin()
@@ -99,6 +104,7 @@ dae::Minigin::~Minigin()
 	Renderer::GetInstance().Destroy();
 	SDL_DestroyWindow(g_window);
 	g_window = nullptr;
+	ServiceLocator::RegisterSoundSystem(nullptr);
 	SDL_Quit();
 
 #if USE_STEAMWORKS

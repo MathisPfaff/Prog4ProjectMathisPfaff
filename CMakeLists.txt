@@ -172,6 +172,8 @@ add_library(minigin STATIC
   Minigin/ISoundSystem.h
   Minigin/NullSoundSystem.h
   Minigin/ServiceLocator.h
+  Minigin/SDLSoundSystem.h
+  Minigin/SDLSoundSystem.cpp
 )
 
 target_compile_features(minigin PUBLIC cxx_std_20)
@@ -219,6 +221,7 @@ endif()
 
 add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/Main.cpp
+  DigDug/SoundObserver.h
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

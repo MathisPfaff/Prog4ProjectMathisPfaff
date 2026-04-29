@@ -20,6 +20,8 @@
 #include "TextDisplayComponent.h"
 #include "DamageCommand.h"
 #include "SteamAchievementObserver.h"
+#include "ServiceLocator.h"
+#include "SoundObserver.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -28,6 +30,13 @@ namespace fs = std::filesystem;
 static void load()
 {
 	auto& scene = dae::SceneManager::GetInstance().CreateScene();
+
+	// Load & start sounds
+	auto& sounds = dae::ServiceLocator::GetSoundSystem();
+	sounds.LoadMusic(DigDugSounds::InGameMusic, "Data/In-Game Music.mp3");
+	sounds.LoadSound(DigDugSounds::HighScore, "Data/High Score.mp3");
+	sounds.LoadSound(DigDugSounds::Miss, "Data/Miss.mp3");
+	sounds.PlayMusic(DigDugSounds::InGameMusic, 0.6f, true);
 
 	auto go = std::make_unique<dae::GameObject>();
 	go->AddComponent<dae::TextureComponent>("background.png");
@@ -155,6 +164,13 @@ static void load()
 	ctrl2->SetLocalPosition(200.f, 490.f);
 	ctrl2->AddComponent<dae::TextComponent>("P2: D-Pad to move  |  Button A to take damage", smallFont, p2Color);
 	scene.Add(std::move(ctrl2));
+
+	// Sound observer
+	static dae::SoundObserver soundObs{};
+	healthComp1->AddObserver(&soundObs);
+	healthComp2->AddObserver(&soundObs);
+	scoreComp1->AddObserver(&soundObs);
+	scoreComp2->AddObserver(&soundObs);
 }
 
 int main(int, char*[]) {
