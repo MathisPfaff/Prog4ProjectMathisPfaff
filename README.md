@@ -80,8 +80,8 @@ Then browse to http://localhost:8000 and you're good to go.
 
 This project is build with github actions.
 - The CMake workflow builds the project in Debug and Release for Windows and serves as a check that the project builds on that platform.
-- The Emscripten workflow generates a web version of the project and publishes it as a [github page](https://avadae.github.io/minigin/). 
-  - The url of that page will be `https://<username>.github.io/<repository>/`
+- The Emscripten workflow generates a web version of the project and publishes it as a [github page](https://mathispfaff.github.io/Prog4ProjectMathisPfaff/).
+  - The url of that page will be `https://mathispfaff.github.io/Prog4ProjectMathisPfaff/`
 - You can embed this page with 
 
 ```<iframe style="position: absolute; top: 0px; left: 0px; width: 1024px; height: 576px;" src="https://<username>.github.io/<repository>/" loading="lazy"></iframe>```

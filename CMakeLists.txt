@@ -171,6 +171,7 @@ add_library(minigin STATIC
   Minigin/Hash.h
   Minigin/ISoundSystem.h
   Minigin/NullSoundSystem.h
+  Minigin/ServiceLocator.h
 )
 
 target_compile_features(minigin PUBLIC cxx_std_20)
