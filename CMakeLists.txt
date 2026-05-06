@@ -168,14 +168,14 @@ add_library(minigin STATIC
   Minigin/BaseComponent.cpp
   Minigin/FPSComponent.cpp
   Minigin/TextureComponent.cpp
-  Minigin/RotationComponent.cpp
-  Minigin/MoveCommand.cpp
+  
+  "DigDug/MoveCommand.cpp"
   Minigin/Controller.cpp
-  Minigin/HealthComponent.cpp
+  "DigDug/HealthComponent.cpp"
   Minigin/Observer.cpp
-  Minigin/DamageCommand.cpp
-  Minigin/ScoreComponent.cpp
-  Minigin/TextDisplayComponent.cpp
+  
+  "DigDug/ScoreComponent.cpp"
+  
   Minigin/Subject.cpp
   Minigin/Hash.h
   Minigin/ISoundSystem.h
