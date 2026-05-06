@@ -4,14 +4,18 @@
 
 namespace dae
 {
-	class MoveCommand final : public GameObjectCommand
-	{
-	public:
-		MoveCommand(GameObject* pGameObject, glm::vec2 direction, float speed);
-		void Execute() override;
+    class GridComponent;
 
-	private:
-		glm::vec2 m_Direction;
-		float m_Speed;
-	};
+    class MoveCommand final : public GameObjectCommand
+    {
+    public:
+        MoveCommand(GameObject* pGameObject, glm::vec2 direction,
+                    GameObject* pGridObject);
+
+        void Execute() override;
+
+    private:
+        glm::vec2   m_Direction{};
+        GameObject* m_pGridObject{};
+    };
 }

@@ -168,14 +168,8 @@ add_library(minigin STATIC
   Minigin/BaseComponent.cpp
   Minigin/FPSComponent.cpp
   Minigin/TextureComponent.cpp
-  
-  "DigDug/MoveCommand.cpp"
   Minigin/Controller.cpp
-  "DigDug/HealthComponent.cpp"
   Minigin/Observer.cpp
-  
-  "DigDug/ScoreComponent.cpp"
-  
   Minigin/Subject.cpp
   Minigin/Hash.h
   Minigin/ISoundSystem.h
@@ -231,6 +225,10 @@ endif()
 add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/Main.cpp
   DigDug/SoundObserver.h
+  DigDug/MoveCommand.cpp
+  DigDug/HealthComponent.cpp
+  DigDug/ScoreComponent.cpp
+  DigDug/GridComponent.cpp 
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)
