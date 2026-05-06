@@ -228,7 +228,14 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/MoveCommand.cpp
   DigDug/HealthComponent.cpp
   DigDug/ScoreComponent.cpp
-  DigDug/GridComponent.cpp 
+  DigDug/GridComponent.cpp
+  DigDug/PookaComponent.h
+  DigDug/PookaComponent.cpp
+  DigDug/PookaState.h
+  DigDug/PookaWalkingState.h
+  DigDug/PookaWalkingState.cpp
+  DigDug/PookaGhostState.h
+  DigDug/PookaGhostState.cpp
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

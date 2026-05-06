@@ -19,6 +19,7 @@
 #include "SteamAchievementObserver.h"
 #include "ServiceLocator.h"
 #include "SoundObserver.h"
+#include "PookaComponent.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -157,6 +158,12 @@ static void load()
     input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }, pGridRaw));
     input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }, pGridRaw));
     input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }, pGridRaw));
+
+    auto pooka = std::make_unique<dae::GameObject>();
+    pooka->AddComponent<dae::TextureComponent>("Pooka.png", 1.5f);
+    pooka->SetLocalPosition(pGridRaw->GetWorldPosition() + glm::vec3(200.f, 150.f, 0.f));
+    pooka->AddComponent<dae::PookaComponent>();
+    scene.Add(std::move(pooka));
 }
 
 int main(int, char*[])
