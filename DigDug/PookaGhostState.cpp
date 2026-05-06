@@ -3,6 +3,7 @@
 #include "PookaComponent.h"
 #include "GameObject.h"
 #include "TextureComponent.h"
+#include "GameTime.h"
 #include <cstdlib>
 
 namespace dae
@@ -29,9 +30,9 @@ namespace dae
         m_Traveled = 0.f;
     }
 
-    void PookaGhostState::Update(GameObject* owner, float deltaTime)
+    void PookaGhostState::Update(GameObject* owner)
     {
-        float step = m_GhostSpeed * deltaTime;
+        float step = m_GhostSpeed * GameTime::GetInstance().GetDeltaTime();
         m_Traveled += step;
 
         auto pos = owner->GetWorldPosition();

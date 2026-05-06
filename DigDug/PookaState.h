@@ -9,7 +9,7 @@ namespace dae
     public:
         virtual ~PookaState() = default;
         virtual void OnEnter(GameObject*) {}
-        virtual void Update(GameObject* owner, float deltaTime) = 0;
+        virtual void Update(GameObject* owner) = 0;
         virtual void OnExit(GameObject*) {}
     };
 }

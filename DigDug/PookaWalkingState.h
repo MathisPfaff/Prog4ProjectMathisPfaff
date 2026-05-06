@@ -10,7 +10,7 @@ namespace dae
         explicit PookaWalkingState(float walkDuration = 4.f, float speed = 60.f);
 
         void OnEnter(GameObject* owner) override;
-        void Update(GameObject* owner, float deltaTime) override;
+        void Update(GameObject* owner) override;
 
     private:
         float m_WalkDuration;

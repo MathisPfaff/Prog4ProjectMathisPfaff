@@ -10,7 +10,7 @@ namespace dae
         explicit PookaGhostState(float ghostSpeed = 100.f);
 
         void OnEnter(GameObject* owner) override;
-        void Update(GameObject* owner, float deltaTime) override;
+        void Update(GameObject* owner) override;
 
     private:
         float m_GhostSpeed;

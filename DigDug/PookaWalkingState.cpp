@@ -3,6 +3,7 @@
 #include "PookaComponent.h"
 #include "GameObject.h"
 #include "TextureComponent.h"
+#include "GameTime.h"
 
 namespace dae
 {
@@ -19,14 +20,14 @@ namespace dae
         m_Direction.x = -m_Direction.x;
     }
 
-    void PookaWalkingState::Update(GameObject* owner, float deltaTime)
+    void PookaWalkingState::Update(GameObject* owner)
     {
-        m_Timer += deltaTime;
+        m_Timer += GameTime::GetInstance().GetDeltaTime();
 
         auto pos = owner->GetWorldPosition();
         owner->SetLocalPosition(
-            pos.x + m_Direction.x * m_Speed * deltaTime,
-            pos.y + m_Direction.y * m_Speed * deltaTime
+            pos.x + m_Direction.x * m_Speed * GameTime::GetInstance().GetDeltaTime(),
+            pos.y + m_Direction.y * m_Speed * GameTime::GetInstance().GetDeltaTime()
         );
 
         if (m_Timer >= m_WalkDuration)

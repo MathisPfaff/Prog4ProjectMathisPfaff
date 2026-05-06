@@ -1,7 +1,6 @@
 #include "PookaComponent.h"
 #include "PookaWalkingState.h"
 #include "GameObject.h"
-#include "GameTime.h"
 
 namespace dae
 {
@@ -15,7 +14,7 @@ namespace dae
     void PookaComponent::Update()
     {
         if (m_pCurrentState)
-            m_pCurrentState->Update(GetOwner(), GameTime::GetInstance().GetDeltaTime());
+            m_pCurrentState->Update(GetOwner());
     }
 
     void PookaComponent::SetState(std::unique_ptr<PookaState> newState)
