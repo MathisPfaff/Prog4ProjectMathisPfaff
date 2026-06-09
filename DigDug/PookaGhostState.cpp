@@ -1,6 +1,5 @@
 #include "PookaGhostState.h"
 #include "PookaWalkingState.h"
-#include "PookaComponent.h"
 #include "GameObject.h"
 #include "TextureComponent.h"
 #include "GameTime.h"
@@ -30,7 +29,7 @@ namespace dae
         m_Traveled = 0.f;
     }
 
-    void PookaGhostState::Update(GameObject* owner)
+    std::unique_ptr<PookaState> PookaGhostState::Update(GameObject* owner)
     {
         float step = m_GhostSpeed * GameTime::GetInstance().GetDeltaTime();
         m_Traveled += step;
@@ -41,8 +40,9 @@ namespace dae
         if (m_Traveled >= m_TravelDistance)
         {
             owner->SetLocalPosition(m_Target);
-            if (auto* pooka = owner->GetComponent<PookaComponent>())
-                pooka->SetState(std::make_unique<PookaWalkingState>());
+            return std::make_unique<PookaWalkingState>();
         }
+
+        return nullptr;
     }
 }

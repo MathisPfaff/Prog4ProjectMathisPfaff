@@ -4,12 +4,47 @@
 #include <SDL3/SDL.h>
 #include <cassert>
 #include <cmath>
+#include <algorithm>
 
 namespace dae
 {
-    static constexpr SDL_Color kColorDirt  {  45,  30,  90, 255 };
-    static constexpr SDL_Color kColorTunnel{ 175, 115,  55, 255 };
-    static constexpr SDL_Color kColorWall  {  20,  10,  40, 255 };
+    // ── Tunnel colour (black) ─────────────────────────────────────────────────
+    static constexpr SDL_Color kColorTunnel{   0,   0,   0, 255 };
+
+    // ── Ground (sky) row colour – always solid blue ───────────────────────────
+    static constexpr SDL_Color kColorGround{  40, 40, 200, 255 };
+
+    // ── Underground zone dirt colours ─────────────────────────────────────────
+    // Level 1 – rows 1-4   : Yellow
+    static constexpr SDL_Color kColorZone1 { 210, 170,  30, 255 };
+    // Level 2 – rows 5-8   : Orange
+    static constexpr SDL_Color kColorZone2 { 210, 105,  30, 255 };
+    // Level 3 – rows 9-12  : Dark Orange
+    static constexpr SDL_Color kColorZone3 { 170,  65,  15, 255 };
+    // Level 4 – rows 13-15 : Dark Red
+    static constexpr SDL_Color kColorZone4 { 130,  20,  10, 255 };
+
+    // Thickness (px) of tunnel-border walls drawn as filled rects
+    static constexpr float kWallThickness = 2.f;
+
+    // Returns the zone colour for a given big-cell row.
+    // Row 0 (ground/sky) → blue; deeper rows get progressively darker.
+    static SDL_Color DirtColorForRow(int row)
+    {
+        if (row <= 0)  return kColorGround;
+        if (row <= 4)  return kColorZone1;
+        if (row <= 8)  return kColorZone2;
+        if (row <= 12) return kColorZone3;
+        return kColorZone4;
+    }
+
+    // Wall colour: use the deeper (higher row-index) of the two touching zones.
+    static SDL_Color WallColor(int bigRowA, int bigRowB)
+    {
+        return DirtColorForRow(std::max(bigRowA, bigRowB));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     GridComponent::GridComponent(GameObject* owner,
                                  float totalWidth, float totalHeight,
@@ -23,7 +58,21 @@ namespace dae
         , m_CellHeight(totalHeight / static_cast<float>(rows))
         , m_Cells(static_cast<size_t>(cols * rows))
     {
+        assert(cols == kFixedCols && rows == kFixedRows &&
+               "GridComponent: grid must be exactly kFixedCols x kFixedRows (14x16)");
         assert(cols > 0 && rows > 0 && "GridComponent: cols and rows must be > 0");
+
+        // Ground row (row 0) is always fully open – pre-open all its sub-cells
+        for (int col = 0; col < m_Cols; ++col)
+        {
+            const int baseSubCol = col * 3;
+            const int baseSubRow = kGroundRow * 3;
+            for (int localSubRow = 0; localSubRow < 3; ++localSubRow)
+                for (int localSubCol = 0; localSubCol < 3; ++localSubCol)
+                    DigSubCell(baseSubCol + localSubCol, baseSubRow + localSubRow);
+
+            OpenSide(col, kGroundRow, TunnelSide::Left | TunnelSide::Right);
+        }
     }
 
     GridCell* GridComponent::Cell(int col, int row)
@@ -109,6 +158,9 @@ namespace dae
 
     void GridComponent::DigPlayerStep(int targetSubCol, int targetSubRow, int directionX, int directionY)
     {
+        // Never dig the ground row
+        if (IsGroundSubRow(targetSubRow)) return;
+
         if (directionX != 0)
         {
             DigSubCell(targetSubCol, targetSubRow - 1);
@@ -133,6 +185,9 @@ namespace dae
 
     void GridComponent::DigPlayerArea(int centerSubCol, int centerSubRow)
     {
+        // Never dig the ground row
+        if (IsGroundSubRow(centerSubRow)) return;
+
         for (int deltaSubRow = -1; deltaSubRow <= 1; ++deltaSubRow)
             for (int deltaSubCol = -1; deltaSubCol <= 1; ++deltaSubCol)
                 DigSubCell(centerSubCol + deltaSubCol, centerSubRow + deltaSubRow);
@@ -165,6 +220,8 @@ namespace dae
     void GridComponent::PreDigCell(int col, int row, TunnelSide sides)
     {
         if (!IsValid(col, row)) return;
+        // Protect the ground row from accidental pre-digging calls
+        if (IsGroundRow(row)) return;
 
         const int baseSubCol = col * 3;
         const int baseSubRow = row * 3;
@@ -203,9 +260,12 @@ namespace dae
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Render
+    // ─────────────────────────────────────────────────────────────────────────
     void GridComponent::Render() const
     {
-        auto* renderer      = dae::Renderer::GetInstance().GetSDLRenderer();
+        auto* renderer = dae::Renderer::GetInstance().GetSDLRenderer();
         const glm::vec3 worldPosition = GetOwner()->GetWorldPosition();
         const float originX = worldPosition.x;
         const float originY = worldPosition.y;
@@ -215,17 +275,32 @@ namespace dae
         const int   totalSubCols  = GetSubCols();
         const int   totalSubRows  = GetSubRows();
 
-        SDL_SetRenderDrawColor(renderer,
-            kColorDirt.r, kColorDirt.g, kColorDirt.b, kColorDirt.a);
-        const SDL_FRect bgRect{ originX, originY, m_TotalWidth, m_TotalHeight };
-        SDL_RenderFillRect(renderer, &bgRect);
+        // ── 1. Background zone bands (all rows; row 0 draws as solid blue) ────
+        for (int row = 0; row < m_Rows; ++row)
+        {
+            const SDL_Color c = DirtColorForRow(row);
+            SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+            const SDL_FRect band{
+                originX,
+                originY + static_cast<float>(row) * m_CellHeight,
+                m_TotalWidth,
+                m_CellHeight
+            };
+            SDL_RenderFillRect(renderer, &band);
+        }
 
+        // ── 2. Dug tunnel sub-cells – always black ────────────────────────────
         SDL_SetRenderDrawColor(renderer,
             kColorTunnel.r, kColorTunnel.g, kColorTunnel.b, kColorTunnel.a);
+
         for (int subRow = 0; subRow < totalSubRows; ++subRow)
+        {
+            if (IsGroundSubRow(subRow)) continue;  // ground row stays its blue colour
+
             for (int subCol = 0; subCol < totalSubCols; ++subCol)
             {
                 if (!IsSubCellDug(subCol, subRow)) continue;
+
                 const SDL_FRect rect{
                     originX + static_cast<float>(subCol) * subCellWidth,
                     originY + static_cast<float>(subRow) * subCellHeight,
@@ -233,9 +308,15 @@ namespace dae
                 };
                 SDL_RenderFillRect(renderer, &rect);
             }
+        }
 
+        // ── 3. Tunnel border walls – thick filled rects in zone colour ────────
+        //  Colour rule: use the deeper (higher row index) of the two touching zones.
+        //  Thickness: kWallThickness pixels drawn INTO the dug (black) cell.
         for (int subRow = 0; subRow < totalSubRows; ++subRow)
         {
+            if (IsGroundSubRow(subRow)) continue;
+
             for (int subCol = 0; subCol < totalSubCols; ++subCol)
             {
                 if (!IsSubCellDug(subCol, subRow)) continue;
@@ -244,83 +325,87 @@ namespace dae
                 const float top    = originY + static_cast<float>(subRow)     * subCellHeight;
                 const float right  = originX + static_cast<float>(subCol + 1) * subCellWidth;
                 const float bottom = originY + static_cast<float>(subRow + 1) * subCellHeight;
+                const float sw     = subCellWidth;
+                const float sh     = subCellHeight;
 
                 const int bigCol = subCol / 3;
                 const int bigRow = subRow / 3;
 
+                // ── Top edge ─────────────────────────────────────────────────
                 {
                     const int neighborSubRow = subRow - 1;
+                    const int neighborBigRow = (neighborSubRow >= 0) ? neighborSubRow / 3 : bigRow;
+
+                    bool draw = false;
                     if (!IsSubCellDug(subCol, neighborSubRow))
+                        draw = true;
+                    else if (subRow % 3 == 0 && !IsSideOpen(bigCol, bigRow, TunnelSide::Up))
+                        draw = true;
+
+                    if (draw)
                     {
-                        SDL_SetRenderDrawColor(renderer,
-                            kColorWall.r, kColorWall.g, kColorWall.b, kColorWall.a);
-                        SDL_RenderLine(renderer, left, top, right, top);
-                    }
-                    else if (subRow % 3 == 0)
-                    {
-                        if (!IsSideOpen(bigCol, bigRow, TunnelSide::Up))
-                        {
-                            SDL_SetRenderDrawColor(renderer,
-                                kColorDirt.r, kColorDirt.g, kColorDirt.b, kColorDirt.a);
-                            SDL_RenderLine(renderer, left, top, right, top);
-                        }
+                        const SDL_Color wc = WallColor(bigRow, neighborBigRow);
+                        SDL_SetRenderDrawColor(renderer, wc.r, wc.g, wc.b, wc.a);
+                        const SDL_FRect wall{ left, top, sw, kWallThickness };
+                        SDL_RenderFillRect(renderer, &wall);
                     }
                 }
 
+                // ── Bottom edge ───────────────────────────────────────────────
                 {
                     const int neighborSubRow = subRow + 1;
+                    const int neighborBigRow = (neighborSubRow < totalSubRows) ? neighborSubRow / 3 : bigRow;
+
+                    bool draw = false;
                     if (!IsSubCellDug(subCol, neighborSubRow))
+                        draw = true;
+                    else if (subRow % 3 == 2 && !IsSideOpen(bigCol, bigRow, TunnelSide::Down))
+                        draw = true;
+
+                    if (draw)
                     {
-                        SDL_SetRenderDrawColor(renderer,
-                            kColorWall.r, kColorWall.g, kColorWall.b, kColorWall.a);
-                        SDL_RenderLine(renderer, left, bottom, right, bottom);
-                    }
-                    else if (subRow % 3 == 2)
-                    {
-                        if (!IsSideOpen(bigCol, bigRow, TunnelSide::Down))
-                        {
-                            SDL_SetRenderDrawColor(renderer,
-                                kColorDirt.r, kColorDirt.g, kColorDirt.b, kColorDirt.a);
-                            SDL_RenderLine(renderer, left, bottom, right, bottom);
-                        }
+                        const SDL_Color wc = WallColor(bigRow, neighborBigRow);
+                        SDL_SetRenderDrawColor(renderer, wc.r, wc.g, wc.b, wc.a);
+                        const SDL_FRect wall{ left, bottom - kWallThickness, sw, kWallThickness };
+                        SDL_RenderFillRect(renderer, &wall);
                     }
                 }
 
+                // ── Left edge ────────────────────────────────────────────────
                 {
                     const int neighborSubCol = subCol - 1;
+
+                    bool draw = false;
                     if (!IsSubCellDug(neighborSubCol, subRow))
+                        draw = true;
+                    else if (subCol % 3 == 0 && !IsSideOpen(bigCol, bigRow, TunnelSide::Left))
+                        draw = true;
+
+                    if (draw)
                     {
-                        SDL_SetRenderDrawColor(renderer,
-                            kColorWall.r, kColorWall.g, kColorWall.b, kColorWall.a);
-                        SDL_RenderLine(renderer, left, top, left, bottom);
-                    }
-                    else if (subCol % 3 == 0)
-                    {
-                        if (!IsSideOpen(bigCol, bigRow, TunnelSide::Left))
-                        {
-                            SDL_SetRenderDrawColor(renderer,
-                                kColorDirt.r, kColorDirt.g, kColorDirt.b, kColorDirt.a);
-                            SDL_RenderLine(renderer, left, top, left, bottom);
-                        }
+                        const SDL_Color wc = DirtColorForRow(bigRow);
+                        SDL_SetRenderDrawColor(renderer, wc.r, wc.g, wc.b, wc.a);
+                        const SDL_FRect wall{ left, top, kWallThickness, sh };
+                        SDL_RenderFillRect(renderer, &wall);
                     }
                 }
 
+                // ── Right edge ────────────────────────────────────────────────
                 {
                     const int neighborSubCol = subCol + 1;
+
+                    bool draw = false;
                     if (!IsSubCellDug(neighborSubCol, subRow))
+                        draw = true;
+                    else if (subCol % 3 == 2 && !IsSideOpen(bigCol, bigRow, TunnelSide::Right))
+                        draw = true;
+
+                    if (draw)
                     {
-                        SDL_SetRenderDrawColor(renderer,
-                            kColorWall.r, kColorWall.g, kColorWall.b, kColorWall.a);
-                        SDL_RenderLine(renderer, right, top, right, bottom);
-                    }
-                    else if (subCol % 3 == 2)
-                    {
-                        if (!IsSideOpen(bigCol, bigRow, TunnelSide::Right))
-                        {
-                            SDL_SetRenderDrawColor(renderer,
-                                kColorDirt.r, kColorDirt.g, kColorDirt.b, kColorDirt.a);
-                            SDL_RenderLine(renderer, right, top, right, bottom);
-                        }
+                        const SDL_Color wc = DirtColorForRow(bigRow);
+                        SDL_SetRenderDrawColor(renderer, wc.r, wc.g, wc.b, wc.a);
+                        const SDL_FRect wall{ right - kWallThickness, top, kWallThickness, sh };
+                        SDL_RenderFillRect(renderer, &wall);
                     }
                 }
             }

@@ -14,7 +14,11 @@ namespace dae
     void PookaComponent::Update()
     {
         if (m_pCurrentState)
-            m_pCurrentState->Update(GetOwner());
+        {
+            auto nextState = m_pCurrentState->Update(GetOwner());
+            if (nextState)
+                SetState(std::move(nextState));
+        }
     }
 
     void PookaComponent::SetState(std::unique_ptr<PookaState> newState)

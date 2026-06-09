@@ -21,7 +21,6 @@
 #include "SDLSoundSystem.h"
 #include "NullSoundSystem.h"
 #include <SDL3/SDL.h>
-//#include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include "Minigin.h"
 #include "InputManager.h"
@@ -35,11 +34,11 @@ SDL_Window* g_window{};
 void LogSDLVersion(const std::string& message, int major, int minor, int patch)
 {
 #if WIN32
-	std::stringstream ss;
-	ss << message << major << "." << minor << "." << patch << "\n";
-	OutputDebugString(ss.str().c_str());
+    std::stringstream ss;
+    ss << message << major << "." << minor << "." << patch << "\n";
+    OutputDebugString(ss.str().c_str());
 #else
-	std::cout << message << major << "." << minor << "." << patch << "\n";
+    std::cout << message << major << "." << minor << "." << patch << "\n";
 #endif
 }
 
@@ -48,94 +47,92 @@ void LogSDLVersion(const std::string& message, int major, int minor, int patch)
 
 void LoopCallback(void* arg)
 {
-	static_cast<dae::Minigin*>(arg)->RunOneFrame();
+    static_cast<dae::Minigin*>(arg)->RunOneFrame();
 }
 #endif
 
 void PrintSDLVersion()
 {
-	LogSDLVersion("Compiled with SDL", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
-	int version = SDL_GetVersion();
-	LogSDLVersion("Linked with SDL ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
-	LogSDLVersion("Compiled with SDL_ttf ",	SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION,SDL_TTF_MICRO_VERSION);
-	version = TTF_Version();
-	LogSDLVersion("Linked with SDL_ttf ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version),	SDL_VERSIONNUM_MICRO(version));
+    LogSDLVersion("Compiled with SDL", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
+    int version = SDL_GetVersion();
+    LogSDLVersion("Linked with SDL ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
+    LogSDLVersion("Compiled with SDL_ttf ", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_MICRO_VERSION);
+    version = TTF_Version();
+    LogSDLVersion("Linked with SDL_ttf ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
 }
 
-dae::Minigin::Minigin(const std::filesystem::path& dataPath)
+dae::Minigin::Minigin(const std::filesystem::path& dataPath,
+                      int windowWidth, int windowHeight)
 {
-	PrintSDLVersion();
+    PrintSDLVersion();
 
 #if USE_STEAMWORKS
-	if (!SteamAPI_Init())
-		throw std::runtime_error(std::string("Fatal Error - Steam must be running to play this game (SteamAPI_Init() failed)."));
-	std::cout << "Steam initialized. Playing as: " << SteamFriends()->GetPersonaName() << "\n";
-
-	// SDK 1.57+: stats are fetched automatically — no RequestCurrentStats() needed.
-	// Init registers the UserStatsReceived_t callback so Unlock() knows when they are ready.
-	dae::SteamAchievements::GetInstance().Init();
+    if (!SteamAPI_Init())
+        throw std::runtime_error(std::string("Fatal Error - Steam must be running to play this game (SteamAPI_Init() failed)."));
+    std::cout << "Steam initialized. Playing as: " << SteamFriends()->GetPersonaName() << "\n";
+    dae::SteamAchievements::GetInstance().Init();
 #endif
-	
-	if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
-	{
-		SDL_Log("Renderer error: %s", SDL_GetError());
-		throw std::runtime_error(std::string("SDL_Init Error: ") + SDL_GetError());
-	}
 
-	g_window = SDL_CreateWindow(
-		"Programming 4 assignment",
-		1024,
-		576,
-		SDL_WINDOW_OPENGL
-	);
-	if (g_window == nullptr) 
-	{
-		throw std::runtime_error(std::string("SDL_CreateWindow Error: ") + SDL_GetError());
-	}
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+    {
+        SDL_Log("Renderer error: %s", SDL_GetError());
+        throw std::runtime_error(std::string("SDL_Init Error: ") + SDL_GetError());
+    }
 
-	Renderer::GetInstance().Init(g_window);
-	ResourceManager::GetInstance().Init(dataPath);
+    g_window = SDL_CreateWindow(
+        "Programming 4 assignment",
+        windowWidth,
+        windowHeight,
+        SDL_WINDOW_OPENGL
+    );
+    if (g_window == nullptr)
+    {
+        throw std::runtime_error(std::string("SDL_CreateWindow Error: ") + SDL_GetError());
+    }
+
+    Renderer::GetInstance().Init(g_window);
+    ResourceManager::GetInstance().Init(dataPath);
 #ifdef __EMSCRIPTEN__
-	ServiceLocator::RegisterSoundSystem(std::make_unique<NullSoundSystem>());
+    ServiceLocator::RegisterSoundSystem(std::make_unique<NullSoundSystem>());
 #else
-	ServiceLocator::RegisterSoundSystem(std::make_unique<SDLSoundSystem>());
+    ServiceLocator::RegisterSoundSystem(std::make_unique<SDLSoundSystem>());
 #endif
 }
 
 dae::Minigin::~Minigin()
 {
-	Renderer::GetInstance().Destroy();
-	SDL_DestroyWindow(g_window);
-	g_window = nullptr;
-	ServiceLocator::RegisterSoundSystem(nullptr);
-	SDL_Quit();
+    Renderer::GetInstance().Destroy();
+    SDL_DestroyWindow(g_window);
+    g_window = nullptr;
+    ServiceLocator::RegisterSoundSystem(nullptr);
+    SDL_Quit();
 
 #if USE_STEAMWORKS
-	SteamAPI_Shutdown();
+    SteamAPI_Shutdown();
 #endif
 }
 
 void dae::Minigin::Run(const std::function<void()>& load)
 {
-	load();
+    load();
 #ifndef __EMSCRIPTEN__
-	while (doContinue)
-		RunOneFrame();
+    while (doContinue)
+        RunOneFrame();
 #else
-	emscripten_set_main_loop_arg(&LoopCallback, this, 0, true);
+    emscripten_set_main_loop_arg(&LoopCallback, this, 0, true);
 #endif
 }
 
 void dae::Minigin::RunOneFrame()
 {
-	const auto current_time = std::chrono::high_resolution_clock::now();
-	const float delta_time = std::chrono::duration<float>(current_time - last_time).count();
-	GameTime::GetInstance().SetDeltaTime(delta_time);
-	last_time = current_time;
-	lag += delta_time;
+    const auto current_time = std::chrono::high_resolution_clock::now();
+    const float delta_time = std::chrono::duration<float>(current_time - last_time).count();
+    GameTime::GetInstance().SetDeltaTime(delta_time);
+    last_time = current_time;
+    lag += delta_time;
 
 #if USE_STEAMWORKS
-	SteamAPI_RunCallbacks();
+    SteamAPI_RunCallbacks();
 #endif
 	
 	doContinue = InputManager::GetInstance().ProcessInput();

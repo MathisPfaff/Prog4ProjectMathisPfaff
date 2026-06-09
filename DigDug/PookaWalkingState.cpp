@@ -1,9 +1,8 @@
 #include "PookaWalkingState.h"
 #include "PookaGhostState.h"
-#include "PookaComponent.h"
 #include "GameObject.h"
-#include "TextureComponent.h"
 #include "GameTime.h"
+#include "TextureComponent.h"
 
 namespace dae
 {
@@ -20,7 +19,7 @@ namespace dae
         m_Direction.x = -m_Direction.x;
     }
 
-    void PookaWalkingState::Update(GameObject* owner)
+    std::unique_ptr<PookaState> PookaWalkingState::Update(GameObject* owner)
     {
         m_Timer += GameTime::GetInstance().GetDeltaTime();
 
@@ -31,9 +30,8 @@ namespace dae
         );
 
         if (m_Timer >= m_WalkDuration)
-        {
-            if (auto* pooka = owner->GetComponent<PookaComponent>())
-                pooka->SetState(std::make_unique<PookaGhostState>());
-        }
+            return std::make_unique<PookaGhostState>();
+
+        return nullptr;
     }
 }

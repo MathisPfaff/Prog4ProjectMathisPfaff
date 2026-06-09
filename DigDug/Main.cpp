@@ -27,11 +27,15 @@ namespace fs = std::filesystem;
 
 static constexpr float kSidebarWidth = 155.f;
 static constexpr float kGridOffsetY  = 30.f;
-static constexpr int   kGridCols     = 16;
-static constexpr int   kGridRows     = 14;
+static constexpr int   kGridCols     = 14;
+static constexpr int   kGridRows     = 16;
 static constexpr float kCellSize     = 36.f;
 static constexpr float kGridWidth    = kGridCols * kCellSize;
 static constexpr float kGridHeight   = kGridRows * kCellSize;
+static constexpr float kRightPadding = 16.f;
+static constexpr float kBottomPadding = 16.f;
+static constexpr int   kWindowWidth = static_cast<int>(kSidebarWidth + kGridWidth + kRightPadding);
+static constexpr int   kWindowHeight = static_cast<int>(kGridOffsetY + kGridHeight + kBottomPadding);
 
 static void DigShapeA(dae::GridComponent* grid)
 {
@@ -175,7 +179,7 @@ int main(int, char*[])
     if (!fs::exists(dataLocation))
         dataLocation = "../Data/";
 #endif
-    dae::Minigin engine(dataLocation);
+    dae::Minigin engine(dataLocation, kWindowWidth, kWindowHeight);
     engine.Run(load);
     return 0;
 }

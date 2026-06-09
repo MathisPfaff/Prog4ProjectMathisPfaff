@@ -14,7 +14,9 @@ namespace dae
 		std::chrono::high_resolution_clock::time_point last_time{ std::chrono::high_resolution_clock::now() };
 		float lag{};
 	public:
-		explicit Minigin(const std::filesystem::path& dataPath);
+		explicit Minigin(const std::filesystem::path& dataPath,
+			int windowWidth = 1024,
+			int windowHeight = 576);
 		~Minigin();
 		void Run(const std::function<void()>& load);
 		void RunOneFrame();
