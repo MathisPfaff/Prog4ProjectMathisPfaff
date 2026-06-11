@@ -168,52 +168,6 @@ namespace dae
         }
     }
 
-    void PlayerMovementComponent::UpdateMoving(float deltaTime)
-    {
-        auto* grid = m_pGridObject->GetComponent<GridComponent>();
-        if (!grid) return;
-
-        auto* owner = GetOwner();
-        if (!owner) return;
-
-        const glm::vec3 gridOrigin = m_pGridObject->GetWorldPosition();
-        const glm::vec3 currentWorldPos = owner->GetWorldPosition();
-
-        // Calculate movement
-        const float speed = CalculateSpeed();
-        const glm::vec3 moveDir = glm::vec3(m_CurrentDirection.x, m_CurrentDirection.y, 0.f);
-        const glm::vec3 newPos = currentWorldPos + moveDir * speed * deltaTime;
-
-        // Check bounds
-        const float relX = newPos.x - gridOrigin.x;
-        const float relY = newPos.y - gridOrigin.y;
-        int subCol{}, subRow{};
-        
-        if (!grid->WorldToSubCell(relX, relY, subCol, subRow))
-        {
-            // Out of bounds, stop
-            m_State = MoveState::Idle;
-            return;
-        }
-
-        const int subColMax = grid->GetSubCols() - 2;
-        const int subRowMax = grid->GetSubRows() - 2;
-        if (subCol < 1 || subCol > subColMax || subRow < 1 || subRow > subRowMax)
-        {
-            m_State = MoveState::Idle;
-            return;
-        }
-
-        // Move
-        owner->SetLocalPosition(newPos);
-
-        // Dig continuously
-        DigAtCurrentPosition();
-
-        // Check walls
-        CheckAndOpenWalls();
-    }
-
     void PlayerMovementComponent::DigAtCurrentPosition()
     {
         auto* grid = m_pGridObject->GetComponent<GridComponent>();
@@ -227,79 +181,60 @@ namespace dae
         const float relX = worldPos.x - gridOrigin.x;
         const float relY = worldPos.y - gridOrigin.y;
 
-        // Get the CENTER subcell of the character's 3x3 footprint
-        int centerSubCol{}, centerSubRow{};
-        if (!grid->WorldToSubCell(relX, relY, centerSubCol, centerSubRow)) return;
+        const int centerSubCol = static_cast<int>(std::floor(relX / grid->GetSubCellWidth()));
+        const int centerSubRow = static_cast<int>(std::floor(relY / grid->GetSubCellHeight()));
 
-        // Only dig if we're in a new subcell
-        if (centerSubCol == m_LastDiggedSubCol && centerSubRow == m_LastDiggedSubRow) return;
+        // Dig the stable 3x3
+        for (int dr = -1; dr <= 1; ++dr)
+            for (int dc = -1; dc <= 1; ++dc)
+                grid->DigSubCell(centerSubCol + dc, centerSubRow + dr);
 
-        m_LastDiggedSubCol = centerSubCol;
-        m_LastDiggedSubRow = centerSubRow;
-
-        // Character occupies exactly 3x3 subcells centered on centerSubCol, centerSubRow
-        // Dig all 9 subcells that the character covers
-        grid->DigSubCell(centerSubCol - 1, centerSubRow - 1); // Top-left
-        grid->DigSubCell(centerSubCol, centerSubRow - 1); // Top-center
-        grid->DigSubCell(centerSubCol + 1, centerSubRow - 1); // Top-right
-
-        grid->DigSubCell(centerSubCol - 1, centerSubRow);     // Middle-left
-        grid->DigSubCell(centerSubCol, centerSubRow);     // Middle-center (character center)
-        grid->DigSubCell(centerSubCol + 1, centerSubRow);     // Middle-right
-
-        grid->DigSubCell(centerSubCol - 1, centerSubRow + 1); // Bottom-left
-        grid->DigSubCell(centerSubCol, centerSubRow + 1); // Bottom-center
-        grid->DigSubCell(centerSubCol + 1, centerSubRow + 1); // Bottom-right
-
-        // Check if we need to open walls when crossing cell boundaries
-        const int currentCol = centerSubCol / 3;
-        const int currentRow = centerSubRow / 3;
+        // Open the wall between two big-cells only when the player is the one
+        // crossing — and only while their 3x3 actually straddles that boundary.
+        // OpenSide uses |= so calling it every frame while straddling is safe.
+        const int centerCol = centerSubCol / 3;
+        const int centerRow = centerSubRow / 3;
 
         const bool movingHorizontal = std::abs(m_CurrentDirection.x) > std::abs(m_CurrentDirection.y);
-
         if (movingHorizontal)
         {
-            // Check the edge of the 3x3 in the direction of movement
-            const int edgeSubCol = centerSubCol + (m_CurrentDirection.x > 0 ? 1 : -1);
-            const int edgeCol = edgeSubCol / 3;
-
-            if (edgeCol != currentCol)
+            const int leadingSubCol = centerSubCol + (m_CurrentDirection.x > 0.f ? 1 : -1);
+            const int leadingCol = leadingSubCol / 3;
+            if (leadingCol != centerCol)   // 3x3 straddles the vertical boundary
             {
-                if (m_CurrentDirection.x > 0)
+                if (m_CurrentDirection.x > 0.f)
                 {
-                    grid->OpenSide(currentCol, currentRow, TunnelSide::Right);
-                    grid->OpenSide(edgeCol, currentRow, TunnelSide::Left);
+                    grid->OpenSide(centerCol, centerRow, TunnelSide::Right);
+                    grid->OpenSide(leadingCol, centerRow, TunnelSide::Left);
                 }
                 else
                 {
-                    grid->OpenSide(currentCol, currentRow, TunnelSide::Left);
-                    grid->OpenSide(edgeCol, currentRow, TunnelSide::Right);
+                    grid->OpenSide(centerCol, centerRow, TunnelSide::Left);
+                    grid->OpenSide(leadingCol, centerRow, TunnelSide::Right);
                 }
             }
         }
         else
         {
-            // Check the edge of the 3x3 in the direction of movement
-            const int edgeSubRow = centerSubRow + (m_CurrentDirection.y > 0 ? 1 : -1);
-            const int edgeRow = edgeSubRow / 3;
-
-            if (edgeRow != currentRow)
+            const int leadingSubRow = centerSubRow + (m_CurrentDirection.y > 0.f ? 1 : -1);
+            const int leadingRow = leadingSubRow / 3;
+            if (leadingRow != centerRow)   // 3x3 straddles the horizontal boundary
             {
-                if (m_CurrentDirection.y > 0)
+                if (m_CurrentDirection.y > 0.f)
                 {
-                    grid->OpenSide(currentCol, currentRow, TunnelSide::Down);
-                    grid->OpenSide(currentCol, edgeRow, TunnelSide::Up);
+                    grid->OpenSide(centerCol, centerRow, TunnelSide::Down);
+                    grid->OpenSide(centerCol, leadingRow, TunnelSide::Up);
                 }
                 else
                 {
-                    grid->OpenSide(currentCol, currentRow, TunnelSide::Up);
-                    grid->OpenSide(currentCol, edgeRow, TunnelSide::Down);
+                    grid->OpenSide(centerCol, centerRow, TunnelSide::Up);
+                    grid->OpenSide(centerCol, leadingRow, TunnelSide::Down);
                 }
             }
         }
     }
 
-    void PlayerMovementComponent::CheckAndOpenWalls()
+    void PlayerMovementComponent::UpdateMoving(float deltaTime)
     {
         auto* grid = m_pGridObject->GetComponent<GridComponent>();
         if (!grid) return;
@@ -308,42 +243,26 @@ namespace dae
         if (!owner) return;
 
         const glm::vec3 gridOrigin = m_pGridObject->GetWorldPosition();
-        const glm::vec3 worldPos = owner->GetWorldPosition();
-        const float relX = worldPos.x - gridOrigin.x;
-        const float relY = worldPos.y - gridOrigin.y;
+        const glm::vec3 currentWorldPos = owner->GetWorldPosition();
 
-        int subCol{}, subRow{};
-        if (!grid->WorldToSubCell(relX, relY, subCol, subRow)) return;
+        const float speed = CalculateSpeed();
+        const glm::vec3 moveDir = glm::vec3(m_CurrentDirection.x, m_CurrentDirection.y, 0.f);
+        const glm::vec3 newPos = currentWorldPos + moveDir * speed * deltaTime;
 
-        const int col = subCol / 3;
-        const int row = subRow / 3;
+        const float relX = newPos.x - gridOrigin.x;
+        const float relY = newPos.y - gridOrigin.y;
 
-        // Only check walls when entering a new cell
-        if (col == m_LastWallCheckCol && row == m_LastWallCheckRow) return;
-
-        const int prevCol = m_LastWallCheckCol;
-        const int prevRow = m_LastWallCheckRow;
-
-        m_LastWallCheckCol = col;
-        m_LastWallCheckRow = row;
-
-        // First movement - no walls to open yet
-        if (prevCol == -1 || prevRow == -1) return;
-
-        // Determine which wall to open based on cell change
-        TunnelSide exitSide = TunnelSide::None;
-        TunnelSide entrySide = TunnelSide::None;
-
-        if (col > prevCol)      { exitSide = TunnelSide::Right; entrySide = TunnelSide::Left; }
-        else if (col < prevCol) { exitSide = TunnelSide::Left;  entrySide = TunnelSide::Right; }
-        else if (row > prevRow) { exitSide = TunnelSide::Down;  entrySide = TunnelSide::Up; }
-        else if (row < prevRow) { exitSide = TunnelSide::Up;    entrySide = TunnelSide::Down; }
-
-        if (exitSide != TunnelSide::None)
+        const float halfW = 1.5f * grid->GetSubCellWidth();
+        const float halfH = 1.5f * grid->GetSubCellHeight();
+        if (relX - halfW < 0.f || relX + halfW > grid->GetTotalWidth() ||
+            relY - halfH < 0.f || relY + halfH > grid->GetTotalHeight())
         {
-            grid->OpenSide(prevCol, prevRow, exitSide);
-            grid->OpenSide(col, row, entrySide);
+            m_State = MoveState::Idle;
+            return;
         }
+
+        owner->SetLocalPosition(newPos);
+        DigAtCurrentPosition();   // walls now open automatically inside DigSubCell
     }
 
     float PlayerMovementComponent::CalculateSpeed() const
@@ -354,7 +273,6 @@ namespace dae
         auto* owner = GetOwner();
         if (!owner) return m_DiggingSpeed;
 
-        // If not moving, use walking speed
         if (glm::length(m_CurrentDirection) < 0.1f) return m_WalkingSpeed;
 
         const glm::vec3 gridOrigin = m_pGridObject->GetWorldPosition();
@@ -362,35 +280,11 @@ namespace dae
         const float relX = worldPos.x - gridOrigin.x;
         const float relY = worldPos.y - gridOrigin.y;
 
-        int subCol{}, subRow{};
-        if (!grid->WorldToSubCell(relX, relY, subCol, subRow)) return m_DiggingSpeed;
+        const float halfW = 1.5f * grid->GetSubCellWidth();
+        const float halfH = 1.5f * grid->GetSubCellHeight();
 
-        // Check the 3 subcells on the edge of the 3x3 area in the direction of movement
-        const bool movingHorizontal = std::abs(m_CurrentDirection.x) > std::abs(m_CurrentDirection.y);
-
-        if (movingHorizontal)
-        {
-            // Check the left or right column of the 3x3
-            const int edgeSubCol = subCol + (m_CurrentDirection.x > 0 ? 1 : -1);
-
-            // Check all 3 subcells on that edge
-            const bool allDug = grid->IsSubCellDug(edgeSubCol, subRow - 1) &&
-                grid->IsSubCellDug(edgeSubCol, subRow) &&
-                grid->IsSubCellDug(edgeSubCol, subRow + 1);
-
-            return allDug ? m_WalkingSpeed : m_DiggingSpeed;
-        }
-        else
-        {
-            // Check the top or bottom row of the 3x3
-            const int edgeSubRow = subRow + (m_CurrentDirection.y > 0 ? 1 : -1);
-
-            // Check all 3 subcells on that edge
-            const bool allDug = grid->IsSubCellDug(subCol - 1, edgeSubRow) &&
-                grid->IsSubCellDug(subCol, edgeSubRow) &&
-                grid->IsSubCellDug(subCol + 1, edgeSubRow);
-
-            return allDug ? m_WalkingSpeed : m_DiggingSpeed;
-        }
+        // Digging speed if ANY overlapping subcell is not yet dug, walking speed otherwise
+        return grid->IsBoxTouchingUndugSubCell(relX - halfW, relY - halfH, relX + halfW, relY + halfH)
+            ? m_DiggingSpeed : m_WalkingSpeed;
     }
 }

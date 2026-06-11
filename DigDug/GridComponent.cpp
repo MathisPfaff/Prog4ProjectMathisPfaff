@@ -143,8 +143,8 @@ namespace dae
     {
         if (!IsSubCellValid(subCol, subRow)) return;
 
-        const int col      = subCol / 3;
-        const int row      = subRow / 3;
+        const int col = subCol / 3;
+        const int row = subRow / 3;
         const int localCol = subCol % 3;
         const int localRow = subRow % 3;
         const int bitIndex = localRow * 3 + localCol;
@@ -215,6 +215,45 @@ namespace dae
     {
         const auto* cell = Cell(col, row);
         return cell && (cell->dugSubCells & 0x1FF) == 0x1FF;
+    }
+
+    void GridComponent::DigSubCellsFullyInside(float relLeft, float relTop, float relRight, float relBottom)
+    {
+        const float sw = GetSubCellWidth();
+        const float sh = GetSubCellHeight();
+
+        // A subcell sc is FULLY inside when: sc*sw >= relLeft  AND  (sc+1)*sw <= relRight
+        const int minSubCol = static_cast<int>(std::ceil(relLeft / sw));
+        const int maxSubCol = static_cast<int>(std::floor(relRight / sw)) - 1;
+        const int minSubRow = static_cast<int>(std::ceil(relTop / sh));
+        const int maxSubRow = static_cast<int>(std::floor(relBottom / sh)) - 1;
+
+        for (int sr = minSubRow; sr <= maxSubRow; ++sr)
+        {
+            if (IsGroundSubRow(sr)) continue;
+            for (int sc = minSubCol; sc <= maxSubCol; ++sc)
+                DigSubCell(sc, sr);
+        }
+    }
+
+    bool GridComponent::IsBoxTouchingUndugSubCell(float relLeft, float relTop, float relRight, float relBottom) const
+    {
+        const float sw = GetSubCellWidth();
+        const float sh = GetSubCellHeight();
+
+        // A subcell sc OVERLAPS the rect when: sc*sw < relRight  AND  (sc+1)*sw > relLeft
+        const int minSubCol = static_cast<int>(std::floor(relLeft / sw));
+        const int maxSubCol = static_cast<int>(std::ceil(relRight / sw)) - 1;
+        const int minSubRow = static_cast<int>(std::floor(relTop / sh));
+        const int maxSubRow = static_cast<int>(std::ceil(relBottom / sh)) - 1;
+
+        for (int sr = minSubRow; sr <= maxSubRow; ++sr)
+        {
+            if (IsGroundSubRow(sr)) continue;
+            for (int sc = minSubCol; sc <= maxSubCol; ++sc)
+                if (!IsSubCellDug(sc, sr)) return true;
+        }
+        return false;
     }
 
     void GridComponent::PreDigCell(int col, int row, TunnelSide sides)

@@ -90,6 +90,9 @@ namespace dae
         bool IsCellEntered(int col, int row) const;
         bool IsCellDug    (int col, int row) const;
 
+        void DigSubCellsFullyInside(float relLeft, float relTop, float relRight, float relBottom);
+        bool IsBoxTouchingUndugSubCell(float relLeft, float relTop, float relRight, float relBottom) const;
+
         void PreDigCell   (int col, int row, TunnelSide sides);
         void PreDigSubCell(int subCol, int subRow) { DigSubCell(subCol, subRow); }
 
