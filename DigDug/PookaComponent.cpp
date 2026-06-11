@@ -4,10 +4,10 @@
 
 namespace dae
 {
-    PookaComponent::PookaComponent(GameObject* owner)
+    PookaComponent::PookaComponent(GameObject* owner, GameObject* pGridObject)
         : BaseComponent(owner)
     {
-        m_pCurrentState = std::make_unique<PookaWalkingState>();
+        m_pCurrentState = std::make_unique<PookaWalkingState>(pGridObject);
         m_pCurrentState->OnEnter(GetOwner());
     }
 

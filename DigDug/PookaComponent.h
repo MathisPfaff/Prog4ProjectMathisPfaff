@@ -8,7 +8,8 @@ namespace dae
     class PookaComponent final : public BaseComponent
     {
     public:
-        explicit PookaComponent(GameObject* owner);
+        // pGridObject: the GameObject that owns the GridComponent
+        explicit PookaComponent(GameObject* owner, GameObject* pGridObject = nullptr);
 
         void FixedUpdate(float) override {}
         void Update() override;

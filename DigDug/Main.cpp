@@ -20,6 +20,10 @@
 #include "ServiceLocator.h"
 #include "SoundObserver.h"
 #include "PookaComponent.h"
+#include "PlayerMovementComponent.h"
+#include "HealthComponent.h"
+#include "HitboxComponent.h"
+#include "LivesDisplayObserver.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -103,21 +107,6 @@ static void load()
     fpsCounter->AddComponent<dae::FPSComponent>();
     scene.Add(std::move(fpsCounter));
 
-    auto ctrlHeader = std::make_unique<dae::GameObject>();
-    ctrlHeader->SetLocalPosition(8.f, 40.f);
-    ctrlHeader->AddComponent<dae::TextComponent>("Controls:", smallFont, SDL_Color{ 220, 220, 220, 255 });
-    scene.Add(std::move(ctrlHeader));
-
-    auto ctrl1 = std::make_unique<dae::GameObject>();
-    ctrl1->SetLocalPosition(8.f, 60.f);
-    ctrl1->AddComponent<dae::TextComponent>("P1: WASD", smallFont, p1Color);
-    scene.Add(std::move(ctrl1));
-
-    auto ctrl2 = std::make_unique<dae::GameObject>();
-    ctrl2->SetLocalPosition(8.f, 78.f);
-    ctrl2->AddComponent<dae::TextComponent>("P2: D-Pad", smallFont, p2Color);
-    scene.Add(std::move(ctrl2));
-
     auto pGridObject = std::make_unique<dae::GameObject>();
     pGridObject->SetLocalPosition(kSidebarWidth, kGridOffsetY);
     pGridObject->AddComponent<dae::GridComponent>(kGridWidth, kGridHeight, kGridCols, kGridRows);
@@ -130,21 +119,53 @@ static void load()
 
     scene.Add(std::move(pGridObject));
 
+    // Player 1 with health and hitbox
     float p1X{}, p1Y{};
     pGrid->CellToWorld(1, 1, p1X, p1Y);
     auto player1 = std::make_unique<dae::GameObject>();
-    player1->AddComponent<dae::TextureComponent>("Player.png", 1.5f);
+    player1->AddComponent<dae::TextureComponent>("Player.png", 2.f);
     player1->SetLocalPosition(pGridRaw->GetWorldPosition() + glm::vec3(p1X, p1Y, 0.f));
+
+    // Add health (3 lives)
+    auto* healthComp1 = player1->AddComponent<dae::HealthComponent>(3);
+
+    // Add hitbox (36x36 for 3x3 subcells)
+    player1->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Player);
+
     auto* pPlayer1 = player1.get();
+    player1->AddComponent<dae::PlayerMovementComponent>(pGridRaw);
     scene.Add(std::move(player1));
 
+    // Lives display for Player 1 - moved lower
+    auto livesDisplay1 = std::make_unique<dae::GameObject>();
+    livesDisplay1->SetLocalPosition(10.f, 50.f);  // Changed from 10.f to 50.f
+    auto* livesText1 = livesDisplay1->AddComponent<dae::TextComponent>("Lives: 3", smallFont, SDL_Color{255, 255, 255, 255});
+    static dae::LivesDisplayObserver livesObs1(healthComp1, livesText1);
+    scene.Add(std::move(livesDisplay1));
+
+    // Player 2 with health and hitbox
     float p2X{}, p2Y{};
     pGrid->CellToWorld(6, 5, p2X, p2Y);
     auto player2 = std::make_unique<dae::GameObject>();
-    player2->AddComponent<dae::TextureComponent>("Player.png", 1.5f);
+    player2->AddComponent<dae::TextureComponent>("Player.png", 2.f);
     player2->SetLocalPosition(pGridRaw->GetWorldPosition() + glm::vec3(p2X, p2Y, 0.f));
+
+    // Add health (3 lives)
+    auto* healthComp2 = player2->AddComponent<dae::HealthComponent>(3);
+
+    // Add hitbox
+    player2->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Player);
+
     auto* pPlayer2 = player2.get();
+    player2->AddComponent<dae::PlayerMovementComponent>(pGridRaw);
     scene.Add(std::move(player2));
+
+    // Lives display for Player 2 - moved lower
+    auto livesDisplay2 = std::make_unique<dae::GameObject>();
+    livesDisplay2->SetLocalPosition(10.f, 70.f);  // Changed from 30.f to 70.f
+    auto* livesText2 = livesDisplay2->AddComponent<dae::TextComponent>("Lives: 3", smallFont, SDL_Color{255, 255, 0, 255});
+    static dae::LivesDisplayObserver livesObs2(healthComp2, livesText2);
+    scene.Add(std::move(livesDisplay2));
 
 #if USE_STEAMWORKS
     static dae::SteamAchievementObserver steamObs1(scoreComp1);
@@ -153,20 +174,27 @@ static void load()
 
     auto& input = dae::InputManager::GetInstance();
 
-    input.BindKeyboard(SDL_SCANCODE_W, dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f, -1.f }, pGridRaw));
-    input.BindKeyboard(SDL_SCANCODE_S, dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f,  1.f }, pGridRaw));
-    input.BindKeyboard(SDL_SCANCODE_A, dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{ -1.f,  0.f }, pGridRaw));
-    input.BindKeyboard(SDL_SCANCODE_D, dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  1.f,  0.f }, pGridRaw));
+    input.BindKeyboard(SDL_SCANCODE_W, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f, -1.f }));
+    input.BindKeyboard(SDL_SCANCODE_S, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  0.f,  1.f }));
+    input.BindKeyboard(SDL_SCANCODE_A, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{ -1.f,  0.f }));
+    input.BindKeyboard(SDL_SCANCODE_D, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer1, glm::vec2{  1.f,  0.f }));
 
-    input.BindController(0, dae::Controller::ControllerButton::DPadUp,    dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f, -1.f }, pGridRaw));
-    input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }, pGridRaw));
-    input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }, pGridRaw));
-    input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Pressed, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }, pGridRaw));
+    input.BindController(0, dae::Controller::ControllerButton::DPadUp,    dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f, -1.f }));
+    input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }));
+    input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }));
+    input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }));
 
+    // Pooka enemy with hitbox
+    float pookaX{}, pookaY{};
+    pGrid->CellToWorld(3, 1, pookaX, pookaY);
     auto pooka = std::make_unique<dae::GameObject>();
-    pooka->AddComponent<dae::TextureComponent>("Pooka.png", 1.5f);
-    pooka->SetLocalPosition(pGridRaw->GetWorldPosition() + glm::vec3(200.f, 150.f, 0.f));
-    pooka->AddComponent<dae::PookaComponent>();
+    pooka->AddComponent<dae::TextureComponent>("Pooka.png", 2.f);
+    pooka->SetLocalPosition(pGridRaw->GetWorldPosition() + glm::vec3(pookaX, pookaY, 0.f));
+    pooka->AddComponent<dae::PookaComponent>(pGridRaw);
+
+    // Add hitbox to Pooka (36x36 for 3x3 subcells, same as player)
+    pooka->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Enemy);
+
     scene.Add(std::move(pooka));
 }
 

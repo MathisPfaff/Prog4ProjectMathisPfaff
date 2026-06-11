@@ -1,17 +1,22 @@
 #include "HealthComponent.h"
 #include <algorithm>
 
-void dae::HealthComponent::FixedUpdate(float deltaTime) { (void)deltaTime; }
+void dae::HealthComponent::FixedUpdate(float) {}
 void dae::HealthComponent::Update()     {}
 void dae::HealthComponent::LateUpdate() {}
 void dae::HealthComponent::Render() const {}
 
 void dae::HealthComponent::TakeDamage(int damage)
 {
-	m_CurrentHealth = std::max(0, m_CurrentHealth - damage);
+    if (m_CurrentHealth <= 0) return; // Already dead
 
-	m_Subject.Notify(this, HealthEvent::Changed);
+    m_CurrentHealth -= damage;
+    if (m_CurrentHealth < 0) m_CurrentHealth = 0;
 
-	if (m_CurrentHealth <= 0)
-		m_Subject.Notify(this, HealthEvent::Died);
+    m_Subject.Notify(this, HealthEvent::Changed);
+
+    if (m_CurrentHealth == 0)
+    {
+        m_Subject.Notify(this, HealthEvent::Died);
+    }
 }
