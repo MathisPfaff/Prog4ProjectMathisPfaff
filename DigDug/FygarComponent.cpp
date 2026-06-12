@@ -26,7 +26,6 @@ namespace dae
     {
         if (!m_pCurrentState) return;
 
-        // While walking, track the last horizontal direction so fire breath aims correctly
         if (auto* walking = dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))
         {
             const glm::vec2 dir = walking->GetLastDirection();
@@ -37,7 +36,6 @@ namespace dae
         auto next = m_pCurrentState->Update(GetOwner());
         if (next)
         {
-            // Intercept Walking→Ghost: randomly go fire breath instead
             if (dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()) &&
                 dynamic_cast<PookaGhostState*>(next.get()))
             {
@@ -57,8 +55,6 @@ namespace dae
 
     bool FygarComponent::IsPumpable() const
     {
-        // Only block re-latching while the beam is already actively inflating.
-        // Walking, ghost, and breathing states are all pumpable.
         if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
             return inf->IsDeflating();
         return true;
@@ -66,11 +62,8 @@ namespace dae
 
     void FygarComponent::BeginInflating()
     {
-        // Reconnect: beam re-latches to a deflating enemy → flip mode.
         if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
         { inf->SetInflating(); return; }
-        // Transition from ANY state (walking, ghost, breathing, ...) to inflating.
-        // FygarBreathingState::OnExit() will call StopFire() automatically via SetState.
         SetState(std::make_unique<PookaInflatingState>(m_pGridObject, 0.f, k_Walk, k_Inflate));
     }
 
@@ -85,7 +78,10 @@ namespace dae
         if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
         {
             if (inf->AddInflate(amount))
-            { GetOwner()->MarkForDestroy(); return true; }
+            {
+                GetOwner()->MarkForDestroy();
+                return true;
+            }
         }
         return false;
     }
@@ -99,5 +95,11 @@ namespace dae
     bool FygarComponent::IsBreathing() const
     {
         return dynamic_cast<FygarBreathingState*>(m_pCurrentState.get()) != nullptr;
+    }
+
+    void FygarComponent::ResetToWalking()
+    {
+        // Reuse the file-scope constants — do NOT redeclare them here
+        SetState(std::make_unique<PookaWalkingState>(m_pGridObject, 10.f, 60.f, k_Walk, k_Ghost));
     }
 }

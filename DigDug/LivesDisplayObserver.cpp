@@ -10,18 +10,30 @@ namespace dae
         , m_TextComp(textComp)
     {
         if (m_HealthComp)
-        {
             m_HealthComp->AddObserver(this);
-        }
         UpdateDisplay();
+    }
+
+    LivesDisplayObserver::~LivesDisplayObserver()
+    {
+        if (m_HealthComp)
+            m_HealthComp->RemoveObserver(this);
     }
 
     void LivesDisplayObserver::OnNotify(BaseComponent*, unsigned int eventID)
     {
         if (eventID == HealthEvent::Changed || eventID == HealthEvent::Died)
-        {
             UpdateDisplay();
+    }
+
+    void LivesDisplayObserver::ClearReferences()
+    {
+        if (m_HealthComp)
+        {
+            m_HealthComp->RemoveObserver(this);
+            m_HealthComp = nullptr;
         }
+        m_TextComp = nullptr;
     }
 
     void LivesDisplayObserver::UpdateDisplay()

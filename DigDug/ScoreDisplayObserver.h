@@ -10,9 +10,12 @@ namespace dae
     {
     public:
         ScoreDisplayObserver(ScoreComponent* scoreComp, TextComponent* textComp);
-        ~ScoreDisplayObserver() override = default;
+        ~ScoreDisplayObserver() override;
 
         void OnNotify(BaseComponent* entity, unsigned int eventID) override;
+
+        // Called when the observed components are about to be destroyed
+        void ClearReferences();
 
     private:
         ScoreComponent* m_ScoreComp{};

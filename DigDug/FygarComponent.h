@@ -21,22 +21,19 @@ namespace dae
 
         void SetState(std::unique_ptr<PookaState> newState);
 
-        // Same pump contract as PookaComponent
         bool IsPumpable()    const;
         void BeginInflating();
         void StartDeflating();
         bool AddInflate(float amount);
-
-        // Call from a player command in versus mode to trigger fire breath
         void TriggerFireBreath();
-
         bool IsBreathing() const;
+
+        // Called by GameManagerComponent on respawn
+        void ResetToWalking();
 
     private:
         std::unique_ptr<PookaState> m_pCurrentState;
         GameObject* m_pGridObject{};
-
-        // Last horizontal direction Fygar walked – used to aim fire breath
-        glm::vec2 m_LastHorizontalDir{ 1.f, 0.f };
+        glm::vec2   m_LastHorizontalDir{ 1.f, 0.f };
     };
 }

@@ -13,10 +13,26 @@ namespace dae
         UpdateDisplay();
     }
 
+    ScoreDisplayObserver::~ScoreDisplayObserver()
+    {
+        if (m_ScoreComp)
+            m_ScoreComp->RemoveObserver(this);
+    }
+
     void ScoreDisplayObserver::OnNotify(BaseComponent*, unsigned int eventID)
     {
         if (eventID == ScoreEvent::Added)
             UpdateDisplay();
+    }
+
+    void ScoreDisplayObserver::ClearReferences()
+    {
+        if (m_ScoreComp)
+        {
+            m_ScoreComp->RemoveObserver(this);
+            m_ScoreComp = nullptr;
+        }
+        m_TextComp = nullptr;
     }
 
     void ScoreDisplayObserver::UpdateDisplay()

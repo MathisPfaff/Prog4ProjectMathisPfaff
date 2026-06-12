@@ -18,6 +18,14 @@ namespace dae
         s_AllHitboxes.push_back(this);
     }
 
+    // Remove from the global list so no other hitbox can ever dereference us
+    HitboxComponent::~HitboxComponent()
+    {
+        auto it = std::find(s_AllHitboxes.begin(), s_AllHitboxes.end(), this);
+        if (it != s_AllHitboxes.end())
+            s_AllHitboxes.erase(it);
+    }
+
     void HitboxComponent::Update()
     {
         if (!m_Enabled) return;

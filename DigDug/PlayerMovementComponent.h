@@ -20,13 +20,11 @@ namespace dae
         void SetDesiredDirection(const glm::vec2& direction);
         glm::vec2 GetCurrentDirection() const { return m_CurrentDirection; }
 
+        // Called on respawn – clears all movement so the player starts from rest
+        void Reset();
+
     private:
-        enum class MoveState
-        {
-            Idle,             
-            AlignToAxis,       
-            Moving            
-        };
+        enum class MoveState { Idle, AlignToAxis, Moving };
 
         void UpdateMovement();
         bool NeedsAlignment(const glm::vec2& newDirection) const;
@@ -35,12 +33,11 @@ namespace dae
         void DigAtCurrentPosition();
         float CalculateSpeed() const;
 
-        GameObject*     m_pGridObject{};
-        glm::vec2       m_DesiredDirection{};
-        glm::vec2       m_CurrentDirection{};
-        MoveState       m_State{ MoveState::Idle };
-
-        glm::vec3       m_AlignmentTarget{};
+        GameObject*  m_pGridObject{};
+        glm::vec2    m_DesiredDirection{};
+        glm::vec2    m_CurrentDirection{};
+        MoveState    m_State{ MoveState::Idle };
+        glm::vec3    m_AlignmentTarget{};
 
         static constexpr float m_DiggingSpeed{ 30.f };
         static constexpr float m_WalkingSpeed{ 60.f };

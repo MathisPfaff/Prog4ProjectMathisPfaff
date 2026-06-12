@@ -1,40 +1,43 @@
 #include "SceneManager.h"
 #include "Scene.h"
+#include <stdexcept>
 
-void dae::SceneManager::FixedUpdate(float fixed_time_step)
+namespace dae
 {
-	for (auto& scene : m_scenes)
+	void SceneManager::FixedUpdate(float fixed_time_step)
 	{
-		scene->FixedUpdate(fixed_time_step);
+		for (auto& scene : m_scenes)
+			scene->FixedUpdate(fixed_time_step);
 	}
-}
 
-void dae::SceneManager::Update()
-{
-	for(auto& scene : m_scenes)
+	void SceneManager::Update()
 	{
-		scene->Update();
+		for (auto& scene : m_scenes)
+			scene->Update();
 	}
-}
 
-void dae::SceneManager::LateUpdate()
-{
-	for (auto& scene : m_scenes)
+	void SceneManager::LateUpdate()
 	{
-		scene->LateUpdate();
+		for (auto& scene : m_scenes)
+			scene->LateUpdate();
 	}
-}
 
-void dae::SceneManager::Render()
-{
-	for (const auto& scene : m_scenes)
+	void SceneManager::Render()
 	{
-		scene->Render();
+		for (const auto& scene : m_scenes)
+			scene->Render();
 	}
-}
 
-dae::Scene& dae::SceneManager::CreateScene()
-{
-	m_scenes.emplace_back(new Scene());
-	return *m_scenes.back();
+	Scene& SceneManager::CreateScene()
+	{
+		m_scenes.emplace_back(new Scene());
+		return *m_scenes.back();
+	}
+
+	Scene& SceneManager::GetActiveScene()
+	{
+		if (m_scenes.empty())
+			throw std::runtime_error("No scene exists yet.");
+		return *m_scenes.back();
+	}
 }

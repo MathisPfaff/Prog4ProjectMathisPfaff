@@ -12,6 +12,14 @@ namespace dae
         , m_pGridObject(pGridObject)
     {}
 
+    void PlayerMovementComponent::Reset()
+    {
+        m_DesiredDirection = glm::vec2(0.f, 0.f);
+        m_CurrentDirection = glm::vec2(0.f, 0.f);
+        m_State            = MoveState::Idle;
+        m_AlignmentTarget  = glm::vec3(0.f);
+    }
+
     void PlayerMovementComponent::SetDesiredDirection(const glm::vec2& direction)
     {
         m_DesiredDirection = direction;
