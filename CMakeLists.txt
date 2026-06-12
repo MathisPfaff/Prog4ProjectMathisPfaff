@@ -239,6 +239,8 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/PlayerMovementComponent.cpp
   DigDug/HitboxComponent.cpp
   DigDug/LivesDisplayObserver.cpp
+  DigDug/PumpComponent.cpp
+  DigDug/PumpCommand.cpp
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

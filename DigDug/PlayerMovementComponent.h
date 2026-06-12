@@ -18,6 +18,7 @@ namespace dae
         void Render() const override {}
 
         void SetDesiredDirection(const glm::vec2& direction);
+        glm::vec2 GetCurrentDirection() const { return m_CurrentDirection; }
 
     private:
         enum class MoveState

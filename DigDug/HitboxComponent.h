@@ -9,7 +9,8 @@ namespace dae
     {
         Player,
         Enemy,
-        Projectile
+        Projectile,
+        Pump
     };
 
     class HitboxComponent final : public BaseComponent

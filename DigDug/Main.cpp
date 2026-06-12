@@ -24,6 +24,8 @@
 #include "HealthComponent.h"
 #include "HitboxComponent.h"
 #include "LivesDisplayObserver.h"
+#include "PumpComponent.h"
+#include "PumpCommand.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -134,6 +136,7 @@ static void load()
 
     auto* pPlayer1 = player1.get();
     player1->AddComponent<dae::PlayerMovementComponent>(pGridRaw);
+    player1->AddComponent<dae::PumpComponent>(pGridRaw);
     scene.Add(std::move(player1));
 
     // Lives display for Player 1 - moved lower
@@ -158,6 +161,7 @@ static void load()
 
     auto* pPlayer2 = player2.get();
     player2->AddComponent<dae::PlayerMovementComponent>(pGridRaw);
+    player2->AddComponent<dae::PumpComponent>(pGridRaw);
     scene.Add(std::move(player2));
 
     // Lives display for Player 2 - moved lower
@@ -183,6 +187,11 @@ static void load()
     input.BindController(0, dae::Controller::ControllerButton::DPadDown,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  0.f,  1.f }));
     input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }));
     input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }));
+
+    input.BindKeyboard(SDL_SCANCODE_SPACE, dae::KeyState::Pressed,
+        std::make_unique<dae::PumpCommand>(pPlayer1));
+    input.BindController(0, dae::Controller::ControllerButton::ButtonX, dae::KeyState::Pressed,
+        std::make_unique<dae::PumpCommand>(pPlayer2));
 
     // Pooka enemy with hitbox
     float pookaX{}, pookaY{};
