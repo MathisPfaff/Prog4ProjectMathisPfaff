@@ -33,21 +33,26 @@ namespace dae
         void SetSize(float width, float height) { m_Width = width; m_Height = height; }
         void SetOffset(float x, float y) { m_Offset = glm::vec2(x, y); }
 
-        // Enable/disable: disabled hitboxes are skipped in all collision checks
+        // Fully disables the hitbox (skipped in all collision loops)
         void SetEnabled(bool enabled) { m_Enabled = enabled; }
         bool IsEnabled() const { return m_Enabled; }
 
-        // Get all hitboxes in the scene for collision checking
+        // Controls whether this hitbox participates in damage dealing.
+        // Separate from IsEnabled so the hitbox stays detectable (e.g. for pump reconnect)
+        // while not hurting the player.
+        void SetCanDamage(bool canDamage) { m_CanDamage = canDamage; }
+        bool CanDamage() const { return m_CanDamage; }
+
         static const std::vector<HitboxComponent*>& GetAllHitboxes() { return s_AllHitboxes; }
 
     private:
-        float m_Width{};
-        float m_Height{};
-        glm::vec2 m_Offset{}; // Offset from GameObject position
+        float      m_Width{};
+        float      m_Height{};
+        glm::vec2  m_Offset{};
         HitboxType m_Type{};
-        bool m_Enabled{ true }; // Hitbox enabled/disabled state
+        bool       m_Enabled{ true };
+        bool       m_CanDamage{ true };
 
-        // Static registry of all hitboxes for collision detection
         static std::vector<HitboxComponent*> s_AllHitboxes;
     };
 }

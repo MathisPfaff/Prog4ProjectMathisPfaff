@@ -20,7 +20,6 @@ namespace dae
 
     void HitboxComponent::Update()
     {
-        // Disabled hitboxes don't participate in any collision
         if (!m_Enabled) return;
 
         auto* owner = GetOwner();
@@ -30,11 +29,15 @@ namespace dae
         {
             if (other == this) continue;
             if (!other->GetOwner()) continue;
-            if (!other->IsEnabled()) continue; // skip disabled (e.g. inflating enemy)
+            if (!other->IsEnabled()) continue;
 
             if ((m_Type == HitboxType::Player && other->m_Type == HitboxType::Enemy) ||
                 (m_Type == HitboxType::Enemy  && other->m_Type == HitboxType::Player))
             {
+                // Inflating / deflating enemies must not hurt the player
+                const HitboxComponent* enemyHb = (m_Type == HitboxType::Enemy) ? this : other;
+                if (!enemyHb->m_CanDamage) continue;
+
                 if (Intersects(other))
                 {
                     auto* playerOwner = (m_Type == HitboxType::Player) ? owner : other->GetOwner();
@@ -58,8 +61,8 @@ namespace dae
         SDL_FRect rect{ left, top, m_Width, m_Height };
 
         SDL_Color color;
-        if (!m_Enabled)
-            color = { 128, 128, 128, 128 }; // grey = disabled / inflating
+        if (!m_CanDamage)
+            color = { 255, 165, 0, 128 }; // orange = inflating / deflating
         else
             color = (m_Type == HitboxType::Player) ? SDL_Color{ 0, 255, 0, 128 }
                                                     : SDL_Color{ 255, 0, 0, 128 };

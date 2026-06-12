@@ -19,10 +19,16 @@ namespace dae
         void LateUpdate()      override {}
         void Render()    const override;
 
-        // Start a pump cycle if currently idle; called by PumpCommand
+        // Pressed binding: starts the beam when idle; no-ops otherwise
         void Fire();
 
-        // Release a stuck pump; called by any non-pump input command (e.g. MoveCommand)
+        // Pressed binding (same button): +k_InflatePulse per press when stuck
+        void InflatePulse();
+
+        // Held binding (same button): sets flag so UpdateStuck inflates continuously
+        void PumpHeld();
+
+        // Any non-pump input (e.g. movement): releases beam, enemy starts deflating
         void ReleaseStuck();
 
         bool IsActive() const { return m_State != PumpState::Idle; }
@@ -39,14 +45,17 @@ namespace dae
 
         GameObject*      m_pGridObject{};
         HitboxComponent* m_pHitbox{};
-        PookaComponent*  m_pStuckEnemy{};   // non-null while beam is stuck to an enemy
+        PookaComponent*  m_pStuckEnemy{};        // non-null only in Stuck state
 
         PumpState  m_State{ PumpState::Idle };
         glm::vec2  m_FiringDirection{ 1.f, 0.f };
         float      m_CurrentLength{ 0.f };
+        bool       m_PumpHeldThisFrame{ false }; // set by PumpHeld(), consumed in UpdateStuck
 
         static constexpr float k_MaxCells{ 2.f };
         static constexpr float k_ExtendSpeed{ 200.f };
         static constexpr float k_RetractSpeed{ 350.f };
+        static constexpr float k_InflatePulse{ 1.5f };    // added per button press  (3 presses = dead)
+        static constexpr float k_InflateHeldRate{ 1.5f }; // added per second while held (3s = dead)
     };
 }

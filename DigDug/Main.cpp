@@ -26,6 +26,7 @@
 #include "LivesDisplayObserver.h"
 #include "PumpComponent.h"
 #include "PumpCommand.h"
+#include "PumpHeldCommand.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -188,10 +189,17 @@ static void load()
     input.BindController(0, dae::Controller::ControllerButton::DPadLeft,  dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{ -1.f,  0.f }));
     input.BindController(0, dae::Controller::ControllerButton::DPadRight, dae::KeyState::Held, std::make_unique<dae::MoveCommand>(pPlayer2, glm::vec2{  1.f,  0.f }));
 
+    // Pump – Pressed: start beam / +1.5f pulse per tap
     input.BindKeyboard(SDL_SCANCODE_SPACE, dae::KeyState::Pressed,
         std::make_unique<dae::PumpCommand>(pPlayer1));
     input.BindController(0, dae::Controller::ControllerButton::ButtonX, dae::KeyState::Pressed,
         std::make_unique<dae::PumpCommand>(pPlayer2));
+
+    // Pump – Held: continuous inflation (+1.5 units/s while button is down)
+    input.BindKeyboard(SDL_SCANCODE_SPACE, dae::KeyState::Held,
+        std::make_unique<dae::PumpHeldCommand>(pPlayer1));
+    input.BindController(0, dae::Controller::ControllerButton::ButtonX, dae::KeyState::Held,
+        std::make_unique<dae::PumpHeldCommand>(pPlayer2));
 
     // Pooka enemy with hitbox
     float pookaX{}, pookaY{};

@@ -36,20 +36,48 @@ namespace dae
 
     bool PookaComponent::IsPumpable() const
     {
-        // Only a Pooka walking tunnels can be hit by the pump;
-        // ghost and already-inflating states are immune.
-        return dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()) != nullptr;
+        if (dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))
+            return true;
+
+        // Only reconnectable while deflating; actively-inflating enemy
+        // already has a beam on it so a second pump must not re-latch.
+        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+            return inflating->IsDeflating();
+
+        return false; // ghost state is always immune
     }
 
     void PookaComponent::BeginInflating()
     {
-        if (!IsPumpable()) return;
+        // Reconnect: beam re-latches to a deflating enemy -> just flip mode,
+        // inflate level is preserved naturally.
+        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+        {
+            inflating->SetInflating();
+            return;
+        }
+
+        // Fresh hit from walking state
+        if (!dynamic_cast<PookaWalkingState*>(m_pCurrentState.get())) return;
         SetState(std::make_unique<PookaInflatingState>(m_pGridObject));
     }
 
-    void PookaComponent::ReleaseInflating()
+    void PookaComponent::StartDeflating()
     {
         if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
-            inflating->Release();
+            inflating->SetDeflating();
+    }
+
+    bool PookaComponent::AddInflate(float amount)
+    {
+        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+        {
+            if (inflating->AddInflate(amount))
+            {
+                GetOwner()->MarkForDestroy();
+                return true;
+            }
+        }
+        return false;
     }
 }
