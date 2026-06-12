@@ -5,6 +5,7 @@
 #include "PookaComponent.h"
 #include "FygarComponent.h"
 #include "PlayerMovementComponent.h"
+#include "ScoreComponent.h"
 #include "GameTime.h"
 #include "Renderer.h"
 #include <SDL3/SDL.h>
@@ -72,6 +73,7 @@ namespace dae
 
         if (StuckEnemyAddInflate(k_InflatePulse))
         {
+            TryAwardKillScore();   // award score while pointers are still valid
             ClearStuckEnemy();
             m_CurrentLength = 0.f;
             m_State = PumpState::Idle;
@@ -194,6 +196,7 @@ namespace dae
         {
             if (StuckEnemyAddInflate(k_InflateHeldRate * dt))
             {
+                TryAwardKillScore();   // award score while pointers are still valid
                 ClearStuckEnemy();
                 m_CurrentLength = 0.f;
                 m_State = PumpState::Idle;
@@ -270,6 +273,44 @@ namespace dae
             const float ox = horiz ? 0.f : static_cast<float>(i);
             const float oy = horiz ? static_cast<float>(i) : 0.f;
             SDL_RenderLine(r, x1 + ox, y1 + oy, x2 + ox, y2 + oy);
+        }
+    }
+
+    void PumpComponent::TryAwardKillScore()
+    {
+        if (!GetOwner()) return;
+        auto* scoreComp = GetOwner()->GetComponent<ScoreComponent>();
+        if (!scoreComp) return;
+
+        auto* grid = m_pGridObject ? m_pGridObject->GetComponent<GridComponent>() : nullptr;
+        if (!grid) return;
+
+        const glm::vec3 gridOrigin  = m_pGridObject->GetWorldPosition();
+        const glm::vec3 playerWorld = GetOwner()->GetWorldPosition();
+
+        int playerCol{}, playerRow{};
+        grid->WorldToCell(playerWorld.x - gridOrigin.x,
+                          playerWorld.y - gridOrigin.y,
+                          playerCol, playerRow);
+
+        if (m_pStuckEnemy)  // Pooka kill
+        {
+            const glm::vec3 enemyWorld = m_pStuckEnemy->GetOwner()->GetWorldPosition();
+            int enemyCol{}, enemyRow{};
+            grid->WorldToCell(enemyWorld.x - gridOrigin.x,
+                              enemyWorld.y - gridOrigin.y,
+                              enemyCol, enemyRow);
+            scoreComp->AddScoreForKill(EnemyType::Pooka, enemyRow, false);
+        }
+        else if (m_pStuckEnemy_Fygar)  // Fygar kill
+        {
+            const glm::vec3 enemyWorld = m_pStuckEnemy_Fygar->GetOwner()->GetWorldPosition();
+            int enemyCol{}, enemyRow{};
+            grid->WorldToCell(enemyWorld.x - gridOrigin.x,
+                              enemyWorld.y - gridOrigin.y,
+                              enemyCol, enemyRow);
+            const bool sameRow = (playerRow == enemyRow);
+            scoreComp->AddScoreForKill(EnemyType::Fygar, enemyRow, sameRow);
         }
     }
 }

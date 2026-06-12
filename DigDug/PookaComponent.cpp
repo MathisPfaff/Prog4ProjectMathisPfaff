@@ -36,43 +36,37 @@ namespace dae
 
     bool PookaComponent::IsPumpable() const
     {
-        if (dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))
-            return true;
-
-        // Only reconnectable while deflating; actively-inflating enemy
-        // already has a beam on it so a second pump must not re-latch.
-        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
-            return inflating->IsDeflating();
-
-        return false; // ghost state is always immune
+        // Only block re-latching while the beam is already actively inflating.
+        // Deflating mode is reconnectable; walking and ghost are always pumpable.
+        if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+            return inf->IsDeflating();
+        return true;
     }
 
     void PookaComponent::BeginInflating()
     {
-        // Reconnect: beam re-latches to a deflating enemy -> just flip mode,
+        // Reconnect: beam re-latches to a deflating enemy → flip mode,
         // inflate level is preserved naturally.
-        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+        if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
         {
-            inflating->SetInflating();
+            inf->SetInflating();
             return;
         }
-
-        // Fresh hit from walking state
-        if (!dynamic_cast<PookaWalkingState*>(m_pCurrentState.get())) return;
+        // Transition from ANY state (walking, ghost, ...) to inflating.
         SetState(std::make_unique<PookaInflatingState>(m_pGridObject));
     }
 
     void PookaComponent::StartDeflating()
     {
-        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
-            inflating->SetDeflating();
+        if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+            inf->SetDeflating();
     }
 
     bool PookaComponent::AddInflate(float amount)
     {
-        if (auto* inflating = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
+        if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
         {
-            if (inflating->AddInflate(amount))
+            if (inf->AddInflate(amount))
             {
                 GetOwner()->MarkForDestroy();
                 return true;

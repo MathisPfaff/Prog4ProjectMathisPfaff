@@ -29,6 +29,8 @@
 #include "PumpHeldCommand.h"
 #include "FireBreathComponent.h"
 #include "FygarComponent.h"
+#include "ScoreComponent.h"
+#include "ScoreDisplayObserver.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -133,6 +135,7 @@ static void load()
 
     // Add health (3 lives)
     auto* healthComp1 = player1->AddComponent<dae::HealthComponent>(3);
+    auto* scoreComp1  = player1->AddComponent<dae::ScoreComponent>();
 
     // Add hitbox (36x36 for 3x3 subcells)
     player1->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Player);
@@ -149,6 +152,13 @@ static void load()
     static dae::LivesDisplayObserver livesObs1(healthComp1, livesText1);
     scene.Add(std::move(livesDisplay1));
 
+    // Score display for Player 1
+    auto scoreDisplay1 = std::make_unique<dae::GameObject>();
+    scoreDisplay1->SetLocalPosition(10.f, 90.f);
+    auto* scoreText1 = scoreDisplay1->AddComponent<dae::TextComponent>("Score: 0", smallFont, SDL_Color{255, 255, 255, 255});
+    static dae::ScoreDisplayObserver scoreObs1(scoreComp1, scoreText1);
+    scene.Add(std::move(scoreDisplay1));
+
     // Player 2 with health and hitbox
     float p2X{}, p2Y{};
     pGrid->CellToWorld(6, 5, p2X, p2Y);
@@ -158,6 +168,7 @@ static void load()
 
     // Add health (3 lives)
     auto* healthComp2 = player2->AddComponent<dae::HealthComponent>(3);
+    auto* scoreComp2  = player2->AddComponent<dae::ScoreComponent>();
 
     // Add hitbox
     player2->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Player);
@@ -173,6 +184,13 @@ static void load()
     auto* livesText2 = livesDisplay2->AddComponent<dae::TextComponent>("Lives: 3", smallFont, SDL_Color{255, 255, 0, 255});
     static dae::LivesDisplayObserver livesObs2(healthComp2, livesText2);
     scene.Add(std::move(livesDisplay2));
+
+    // Score display for Player 2
+    auto scoreDisplay2 = std::make_unique<dae::GameObject>();
+    scoreDisplay2->SetLocalPosition(10.f, 110.f);
+    auto* scoreText2 = scoreDisplay2->AddComponent<dae::TextComponent>("Score: 0", smallFont, SDL_Color{255, 255, 0, 255});
+    static dae::ScoreDisplayObserver scoreObs2(scoreComp2, scoreText2);
+    scene.Add(std::move(scoreDisplay2));
 
 #if USE_STEAMWORKS
     static dae::SteamAchievementObserver steamObs1(scoreComp1);

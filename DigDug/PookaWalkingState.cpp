@@ -19,23 +19,61 @@ namespace
         {  0, -1, dae::TunnelSide::Up    },
     }};
 
-    // Returns true when the Pooka can walk INTO cell (nc, nr) from the given side.
-    // Two conditions must both hold:
-    //   1. The shared wall between the cells is flagged open (IsSideOpen).
-    //   2. The centre subcell of the target cell is actually dug.
-    //      The player might have only clipped the very first subcol/subrow of a cell
-    //      (opening the wall flag) without ever digging its centre. The Pooka snaps to
-    //      the cell centre, so the centre subcell MUST be clear dirt.
     bool CanEnterCell(dae::GridComponent* grid, int fromCol, int fromRow,
                       int toCol, int toRow, dae::TunnelSide side)
     {
         if (!grid->IsValid(toCol, toRow)) return false;
         if (!grid->IsSideOpen(fromCol, fromRow, side)) return false;
-
-        // Centre subcell of the target big-cell
         const int centerSubCol = toCol * 3 + 1;
         const int centerSubRow = toRow * 3 + 1;
         return grid->IsSubCellDug(centerSubCol, centerSubRow);
+    }
+
+    // Returns true when the enemy can immediately start moving from (col, row).
+    bool IsWalkable(dae::GridComponent* grid, int col, int row)
+    {
+        for (const auto& d : kDirs)
+            if (CanEnterCell(grid, col, row, col + d.dx, row + d.dy, d.side))
+                return true;
+        return false;
+    }
+
+    // BFS from (startCol, startRow) to find the nearest cell the enemy can
+    // actually walk out of. Called when an enemy enters walking state from a
+    // position that is not on a tunnel (e.g. was a ghost mid-wall when pumped).
+    std::pair<int,int> FindNearestWalkableCell(dae::GridComponent* grid,
+                                               int startCol, int startRow)
+    {
+        if (IsWalkable(grid, startCol, startRow))
+            return { startCol, startRow };
+
+        const int cols = grid->GetCols();
+        const int rows = grid->GetRows();
+        std::vector<bool> visited(static_cast<size_t>(rows * cols), false);
+        std::vector<std::pair<int,int>> frontier{ { startCol, startRow } };
+        visited[static_cast<size_t>(startRow * cols + startCol)] = true;
+
+        while (!frontier.empty())
+        {
+            std::vector<std::pair<int,int>> next;
+            for (auto [c, r] : frontier)
+            {
+                for (const auto& d : kDirs)
+                {
+                    const int nc = c + d.dx;
+                    const int nr = r + d.dy;
+                    if (!grid->IsValid(nc, nr)) continue;
+                    const size_t idx = static_cast<size_t>(nr * cols + nc);
+                    if (visited[idx]) continue;
+                    visited[idx] = true;
+                    if (IsWalkable(grid, nc, nr))
+                        return { nc, nr };
+                    next.emplace_back(nc, nr);
+                }
+            }
+            frontier = std::move(next);
+        }
+        return { startCol, startRow }; // nothing found, fall back to original
     }
 }
 
@@ -72,6 +110,10 @@ namespace dae
         if (!grid->WorldToCell(worldPos.x - gridOrigin.x,
                                worldPos.y - gridOrigin.y, col, row)) return;
 
+        // If the nearest cell has no walkable tunnel (e.g. the enemy was a ghost
+        // mid-wall when the pump caught it), find the closest cell that does.
+        std::tie(col, row) = FindNearestWalkableCell(grid, col, row);
+
         // Snap to exact cell centre – eliminates any drift from prior state
         float cx{}, cy{};
         grid->CellToWorld(col, row, cx, cy);
@@ -105,7 +147,6 @@ namespace dae
         const float dt = GameTime::GetInstance().GetDeltaTime();
         m_Timer += dt;
 
-        // If stuck (no passable directions on spawn), still time out to ghost
         if (!m_HasTarget)
         {
             if (m_Timer >= m_WalkDuration && m_pGridObject)
@@ -120,10 +161,8 @@ namespace dae
 
         if (step >= dist)
         {
-            // Arrived – snap precisely to cell centre, no accumulated error
             owner->SetLocalPosition(m_TargetWorldPos);
 
-            // Transition to ghost only at a cell centre (smooth handoff)
             if (m_Timer >= m_WalkDuration)
                 return std::make_unique<PookaGhostState>(m_pGridObject, 35.f, m_GhostTexture, m_WalkTexture);
 
@@ -146,8 +185,6 @@ namespace dae
         const int oppX = -prevDirX;
         const int oppY = -prevDirY;
 
-        // Collect forward/side options; keep reverse separately for dead-end fallback.
-        // CanEnterCell guards both the open-wall flag AND the dug centre subcell.
         std::vector<int> candidates;
         int reverseIdx = -1;
 
@@ -158,7 +195,7 @@ namespace dae
             if (!CanEnterCell(grid, col, row, nc, nr, kDirs[i].side)) continue;
 
             if (kDirs[i].dx == oppX && kDirs[i].dy == oppY)
-                reverseIdx = i;   // passable reverse – save for dead-end case
+                reverseIdx = i;
             else
                 candidates.push_back(i);
         }
@@ -167,9 +204,9 @@ namespace dae
         if (!candidates.empty())
             chosen = candidates[static_cast<size_t>(std::rand()) % candidates.size()];
         else if (reverseIdx != -1)
-            chosen = reverseIdx; // dead end: turn around
+            chosen = reverseIdx;
 
-        if (chosen == -1) { m_HasTarget = false; return; } // completely stuck
+        if (chosen == -1) { m_HasTarget = false; return; }
 
         m_DirX      = kDirs[chosen].dx;
         m_DirY      = kDirs[chosen].dy;

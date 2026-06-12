@@ -30,7 +30,7 @@ namespace dae
         if (auto* walking = dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))
         {
             const glm::vec2 dir = walking->GetLastDirection();
-            if (std::abs(dir.x) > 0.5f)  // only update on horizontal movement
+            if (std::abs(dir.x) > 0.5f)
                 m_LastHorizontalDir = { dir.x > 0.f ? 1.f : -1.f, 0.f };
         }
 
@@ -57,20 +57,21 @@ namespace dae
 
     bool FygarComponent::IsPumpable() const
     {
-        if (dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))    return true;
+        // Only block re-latching while the beam is already actively inflating.
+        // Walking, ghost, and breathing states are all pumpable.
         if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
             return inf->IsDeflating();
-        return false;
+        return true;
     }
 
     void FygarComponent::BeginInflating()
     {
+        // Reconnect: beam re-latches to a deflating enemy → flip mode.
         if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
         { inf->SetInflating(); return; }
-
-        if (!dynamic_cast<PookaWalkingState*>(m_pCurrentState.get())) return;
-        SetState(std::make_unique<PookaInflatingState>(
-            m_pGridObject, 0.f, k_Walk, k_Inflate));
+        // Transition from ANY state (walking, ghost, breathing, ...) to inflating.
+        // FygarBreathingState::OnExit() will call StopFire() automatically via SetState.
+        SetState(std::make_unique<PookaInflatingState>(m_pGridObject, 0.f, k_Walk, k_Inflate));
     }
 
     void FygarComponent::StartDeflating()
@@ -92,7 +93,6 @@ namespace dae
     void FygarComponent::TriggerFireBreath()
     {
         if (!dynamic_cast<PookaWalkingState*>(m_pCurrentState.get())) return;
-        // Uses m_LastHorizontalDir – always up to date from Update() tracking above
         SetState(std::make_unique<FygarBreathingState>(m_pGridObject, m_LastHorizontalDir));
     }
 

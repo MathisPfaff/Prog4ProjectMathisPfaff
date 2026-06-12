@@ -37,6 +37,11 @@ namespace dae
 
         bool IsSubCellBlocked(float relX, float relY) const;
 
+        // Reads the currently stuck enemy, computes the correct Dig Dug score,
+        // and credits it to the ScoreComponent on the owner. Must be called
+        // BEFORE ClearStuckEnemy().
+        void TryAwardKillScore();
+
         // Generic helpers so UpdateStuck / ReleaseStuck / InflatePulse
         // don't need to branch on which enemy type is stuck
         bool  HasStuckEnemy()           const;

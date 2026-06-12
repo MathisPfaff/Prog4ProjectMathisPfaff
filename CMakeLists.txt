@@ -242,6 +242,7 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/FygarBreathingState.cpp
   DigDug/FygarComponent.cpp
   DigDug/FireBreathComponent.cpp
+  DigDug/ScoreDisplayObserver.cpp
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

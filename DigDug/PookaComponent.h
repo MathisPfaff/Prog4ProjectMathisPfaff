@@ -17,17 +17,16 @@ namespace dae
 
         void SetState(std::unique_ptr<PookaState> newState);
 
-        // True when pump can latch:
-        //   - Walking state (fresh hit)
-        //   - Inflating state in Deflating mode (reconnect after release)
-        // False for ghost state and actively-inflating state (beam already on enemy)
+        // Returns false only while the beam is actively inflating the enemy
+        // (prevents a second pump latching on at the same time).
+        // Walking, ghost, and deflating-inflate states are all pumpable.
         bool IsPumpable() const;
 
-        // Walking  -> Inflating (Mode::Inflating), fresh pump hit
-        // Deflating mode -> Inflating mode, reconnect (preserves inflate level)
+        // Any state -> Inflating (Mode::Inflating), or
+        // Deflating mode -> Inflating mode (reconnect, preserves inflate level).
         void BeginInflating();
 
-        // Switch to Deflating mode; beam just released
+        // Switch to Deflating mode; beam just released.
         void StartDeflating();
 
         // Add inflate amount; marks the owner for destroy when level reaches max.
