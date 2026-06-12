@@ -14,9 +14,8 @@ namespace dae
         : BaseComponent(owner)
         , m_pGridObject(pGridObject)
     {
-        // Zero-sized fire hitbox; resized while the flame is active (same pattern as PumpComponent)
         m_pFireHitbox = owner->AddComponent<HitboxComponent>(0.f, 0.f, HitboxType::Fire);
-        m_pFireHitbox->SetCanDamage(false); // off until Fire() is called
+        m_pFireHitbox->SetCanDamage(false);
     }
 
     // ── Public interface ────────────────────────────────────────────────────
@@ -25,21 +24,27 @@ namespace dae
     {
         if (m_Active) return;
 
-        m_FiringDirection = m_FacingDirection;
+        // Fire breath is ALWAYS horizontal – snap vertical or zero facing to right
+        if (std::abs(m_FacingDirection.x) >= std::abs(m_FacingDirection.y)
+            && m_FacingDirection.x != 0.f)
+            m_FiringDirection = { m_FacingDirection.x > 0.f ? 1.f : -1.f, 0.f };
+        else
+            m_FiringDirection = { 1.f, 0.f };  // fallback: right
+
         m_CurrentLength = 0.f;
-        m_HoldTimer = 0.f;
-        m_FireState = FireState::Extending;
-        m_Active = true;
+        m_HoldTimer     = 0.f;
+        m_FireState     = FireState::Extending;
+        m_Active        = true;
         m_pFireHitbox->SetCanDamage(true);
     }
 
     void FireBreathComponent::StopFire()
     {
-        m_Active = false;
-        m_FireState = FireState::Idle;
+        m_Active        = false;
+        m_FireState     = FireState::Idle;
         m_CurrentLength = 0.f;
         m_pFireHitbox->SetCanDamage(false);
-        UpdateHitbox(); // zero the hitbox immediately
+        UpdateHitbox();
     }
 
     // ── Per-frame update ────────────────────────────────────────────────────
@@ -51,22 +56,42 @@ namespace dae
         auto* grid = m_pGridObject ? m_pGridObject->GetComponent<GridComponent>() : nullptr;
         if (!grid) { StopFire(); return; }
 
-        const float dt = GameTime::GetInstance().GetDeltaTime();
-        const bool  horiz = std::abs(m_FiringDirection.x) > 0.5f;
-        const float cellSize = horiz ? grid->GetCellWidth() : grid->GetCellHeight();
-        const float maxLen = k_MaxCells * cellSize;
+        const float dt       = GameTime::GetInstance().GetDeltaTime();
+        const float cellSize = grid->GetCellWidth();           // always horizontal now
+        const float maxLen   = k_MaxCells * cellSize;
 
         switch (m_FireState)
         {
         case FireState::Extending:
-            m_CurrentLength += k_ExtendSpeed * dt;
-            if (m_CurrentLength >= maxLen)
+        {
+            const float candidate = m_CurrentLength + k_ExtendSpeed * dt;
+
+            // Compute the tip in grid-relative space – identical to PumpComponent
+            const glm::vec3 gridOrigin = m_pGridObject->GetWorldPosition();
+            const glm::vec3 ownerWorld = GetOwner()->GetWorldPosition();
+            const glm::vec2 relOrigin  = { ownerWorld.x - gridOrigin.x,
+                                           ownerWorld.y - gridOrigin.y };
+            const glm::vec2 newTipRel  = relOrigin + m_FiringDirection * candidate;
+
+            if (IsFireBlocked(newTipRel.x, newTipRel.y))
             {
-                m_CurrentLength = maxLen;
+                // Hit undug dirt – stop extending at current length, start holding
+                // (m_CurrentLength is NOT advanced so fire sits just before the wall)
                 m_FireState = FireState::Holding;
                 m_HoldTimer = 0.f;
             }
+            else if (candidate >= maxLen)
+            {
+                m_CurrentLength = maxLen;
+                m_FireState     = FireState::Holding;
+                m_HoldTimer     = 0.f;
+            }
+            else
+            {
+                m_CurrentLength = candidate;
+            }
             break;
+        }
 
         case FireState::Holding:
             m_HoldTimer += dt;
@@ -91,6 +116,20 @@ namespace dae
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
+    bool FireBreathComponent::IsFireBlocked(float relX, float relY) const
+    {
+        // Identical contract to PumpComponent::IsSubCellBlocked:
+        //   ground row sub-rows are never blocked (above-ground area)
+        //   any other undug subcell blocks the fire
+        auto* grid = m_pGridObject ? m_pGridObject->GetComponent<GridComponent>() : nullptr;
+        if (!grid) return true;
+
+        int subCol{}, subRow{};
+        if (!grid->WorldToSubCell(relX, relY, subCol, subRow)) return true;
+        if (grid->IsGroundSubRow(subRow)) return false;
+        return !grid->IsSubCellDug(subCol, subRow);
+    }
+
     void FireBreathComponent::UpdateHitbox()
     {
         if (!m_pFireHitbox) return;
@@ -105,20 +144,12 @@ namespace dae
         auto* grid = m_pGridObject ? m_pGridObject->GetComponent<GridComponent>() : nullptr;
         if (!grid) return;
 
-        const float halfLen = m_CurrentLength * 0.5f;
-        const bool  horiz = std::abs(m_FiringDirection.x) > 0.5f;
-        const float thickness = horiz ? grid->GetCellHeight() : grid->GetCellWidth();
+        // Fire is always horizontal – thickness spans the full cell height
+        const float halfLen   = m_CurrentLength * 0.5f;
+        const float thickness = grid->GetCellHeight();
 
-        if (horiz)
-        {
-            m_pFireHitbox->SetSize(m_CurrentLength, thickness);
-            m_pFireHitbox->SetOffset(m_FiringDirection.x * halfLen, 0.f);
-        }
-        else
-        {
-            m_pFireHitbox->SetSize(thickness, m_CurrentLength);
-            m_pFireHitbox->SetOffset(0.f, m_FiringDirection.y * halfLen);
-        }
+        m_pFireHitbox->SetSize(m_CurrentLength, thickness);
+        m_pFireHitbox->SetOffset(m_FiringDirection.x * halfLen, 0.f);
     }
 
     void FireBreathComponent::Render() const
@@ -132,22 +163,19 @@ namespace dae
         const float x1 = wp.x;
         const float y1 = wp.y;
         const float x2 = wp.x + m_FiringDirection.x * m_CurrentLength;
-        const float y2 = wp.y + m_FiringDirection.y * m_CurrentLength;
+        const float y2 = wp.y;  // always horizontal, y never changes
 
         SDL_Renderer* r = Renderer::GetInstance().GetSDLRenderer();
 
-        // Colour shifts orange → yellow while holding
         if (m_FireState == FireState::Holding)
-            SDL_SetRenderDrawColor(r, 255, 220, 0, 255);
+            SDL_SetRenderDrawColor(r, 255, 220, 0, 255);  // yellow at full extension
         else
-            SDL_SetRenderDrawColor(r, 255, 80, 0, 255);
+            SDL_SetRenderDrawColor(r, 255, 80, 0, 255);   // orange while extending/retracting
 
-        const bool horiz = std::abs(m_FiringDirection.x) > 0.5f;
         for (int i = -3; i <= 3; ++i)
         {
-            const float ox = horiz ? 0.f : static_cast<float>(i * 2);
-            const float oy = horiz ? static_cast<float>(i * 2) : 0.f;
-            SDL_RenderLine(r, x1 + ox, y1 + oy, x2 + ox, y2 + oy);
+            const float oy = static_cast<float>(i * 2);
+            SDL_RenderLine(r, x1, y1 + oy, x2, y2 + oy);
         }
     }
 }

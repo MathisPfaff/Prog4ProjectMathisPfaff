@@ -6,20 +6,20 @@
 
 namespace dae
 {
-    FygarBreathingState::FygarBreathingState(GameObject* pGridObject)
+    FygarBreathingState::FygarBreathingState(GameObject* pGridObject, glm::vec2 fireDirection)
         : m_pGridObject(pGridObject)
+        , m_FireDirection(fireDirection)
     {}
 
     void FygarBreathingState::OnEnter(GameObject* owner)
     {
         if (auto* tex = owner->GetComponent<TextureComponent>())
-            tex->SetTexture("Fygar.png"); // reuse walk sprite until you have a fire sprite
+            tex->SetTexture("Fygar.png");
 
         m_pFire = owner->GetComponent<FireBreathComponent>();
         if (m_pFire)
         {
-            // Default facing right; replace with actual last-walk direction when AI is complete
-            m_pFire->SetFacingDirection({ 1.f, 0.f });
+            m_pFire->SetFacingDirection(m_FireDirection); // always horizontal, guaranteed by FygarComponent
             m_pFire->Fire();
         }
     }

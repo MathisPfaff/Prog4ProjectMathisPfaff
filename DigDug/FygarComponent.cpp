@@ -5,6 +5,7 @@
 #include "FygarBreathingState.h"
 #include "GameObject.h"
 #include <cstdlib>
+#include <cmath>
 
 namespace dae
 {
@@ -25,20 +26,24 @@ namespace dae
     {
         if (!m_pCurrentState) return;
 
+        // While walking, track the last horizontal direction so fire breath aims correctly
+        if (auto* walking = dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))
+        {
+            const glm::vec2 dir = walking->GetLastDirection();
+            if (std::abs(dir.x) > 0.5f)  // only update on horizontal movement
+                m_LastHorizontalDir = { dir.x > 0.f ? 1.f : -1.f, 0.f };
+        }
+
         auto next = m_pCurrentState->Update(GetOwner());
         if (next)
         {
-            // When PookaWalkingState's timer expires it always returns a PookaGhostState.
-            // Fygar intercepts that exact transition and randomly picks ghost OR fire breath.
-            // Everything else (ghost→walk, breath→walk, pump hits) passes straight through.
+            // Intercept Walking→Ghost: randomly go fire breath instead
             if (dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()) &&
                 dynamic_cast<PookaGhostState*>(next.get()))
             {
                 if (std::rand() % 2 == 0)
-                    next = std::make_unique<FygarBreathingState>(m_pGridObject);
-                // else: keep next as PookaGhostState — ghost behaviour identical to Pooka
+                    next = std::make_unique<FygarBreathingState>(m_pGridObject, m_LastHorizontalDir);
             }
-
             SetState(std::move(next));
         }
     }
@@ -55,7 +60,7 @@ namespace dae
         if (dynamic_cast<PookaWalkingState*>(m_pCurrentState.get()))    return true;
         if (auto* inf = dynamic_cast<PookaInflatingState*>(m_pCurrentState.get()))
             return inf->IsDeflating();
-        return false; // ghost and breathing are immune
+        return false;
     }
 
     void FygarComponent::BeginInflating()
@@ -87,7 +92,8 @@ namespace dae
     void FygarComponent::TriggerFireBreath()
     {
         if (!dynamic_cast<PookaWalkingState*>(m_pCurrentState.get())) return;
-        SetState(std::make_unique<FygarBreathingState>(m_pGridObject));
+        // Uses m_LastHorizontalDir – always up to date from Update() tracking above
+        SetState(std::make_unique<FygarBreathingState>(m_pGridObject, m_LastHorizontalDir));
     }
 
     bool FygarComponent::IsBreathing() const

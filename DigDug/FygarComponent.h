@@ -1,6 +1,7 @@
 #pragma once
 #include "BaseComponent.h"
 #include "PookaState.h"
+#include <glm/glm.hpp>
 #include <memory>
 
 namespace dae
@@ -34,5 +35,8 @@ namespace dae
     private:
         std::unique_ptr<PookaState> m_pCurrentState;
         GameObject* m_pGridObject{};
+
+        // Last horizontal direction Fygar walked – used to aim fire breath
+        glm::vec2 m_LastHorizontalDir{ 1.f, 0.f };
     };
 }
