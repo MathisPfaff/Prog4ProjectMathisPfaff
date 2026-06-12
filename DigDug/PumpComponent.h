@@ -6,6 +6,7 @@ namespace dae
 {
     class GridComponent;
     class HitboxComponent;
+    class PookaComponent;
 
     class PumpComponent final : public BaseComponent
     {
@@ -21,29 +22,31 @@ namespace dae
         // Start a pump cycle if currently idle; called by PumpCommand
         void Fire();
 
+        // Release a stuck pump; called by any non-pump input command (e.g. MoveCommand)
+        void ReleaseStuck();
+
         bool IsActive() const { return m_State != PumpState::Idle; }
 
     private:
-        enum class PumpState { Idle, Extending, Retracting };
+        enum class PumpState { Idle, Extending, Retracting, Stuck };
 
         void UpdateExtending(float dt);
         void UpdateRetracting(float dt);
+        void UpdateStuck(float dt);
         void UpdateHitbox();
 
-        // Returns true when the subcell at grid-relative (relX, relY) is NOT dug
-        // (walls between cells are intentionally NOT checked – pump ignores them)
         bool IsSubCellBlocked(float relX, float relY) const;
 
-        GameObject* m_pGridObject{};
+        GameObject*      m_pGridObject{};
         HitboxComponent* m_pHitbox{};
+        PookaComponent*  m_pStuckEnemy{};   // non-null while beam is stuck to an enemy
 
         PumpState  m_State{ PumpState::Idle };
-        glm::vec2  m_FiringDirection{ 1.f, 0.f };       // defaults to right
-        float      m_CurrentLength{ 0.f };             // tip distance from player centre (px)
+        glm::vec2  m_FiringDirection{ 1.f, 0.f };
+        float      m_CurrentLength{ 0.f };
 
-        // Original Dig Dug: pump reaches exactly 2 full grid cells
         static constexpr float k_MaxCells{ 2.f };
-        static constexpr float k_ExtendSpeed{ 200.f }; // px/s – feels snappy
-        static constexpr float k_RetractSpeed{ 350.f }; // px/s – retracts faster than it extends
+        static constexpr float k_ExtendSpeed{ 200.f };
+        static constexpr float k_RetractSpeed{ 350.f };
     };
 }

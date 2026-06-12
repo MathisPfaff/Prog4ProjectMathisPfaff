@@ -229,13 +229,10 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/HealthComponent.cpp
   DigDug/ScoreComponent.cpp
   DigDug/GridComponent.cpp
-  DigDug/PookaComponent.h
   DigDug/PookaComponent.cpp
-  DigDug/PookaState.h
-  DigDug/PookaWalkingState.h
   DigDug/PookaWalkingState.cpp
-  DigDug/PookaGhostState.h
   DigDug/PookaGhostState.cpp
+  DigDug/PookaInflatingState.cpp
   DigDug/PlayerMovementComponent.cpp
   DigDug/HitboxComponent.cpp
   DigDug/LivesDisplayObserver.cpp

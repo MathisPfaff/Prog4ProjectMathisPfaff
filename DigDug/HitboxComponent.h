@@ -33,6 +33,10 @@ namespace dae
         void SetSize(float width, float height) { m_Width = width; m_Height = height; }
         void SetOffset(float x, float y) { m_Offset = glm::vec2(x, y); }
 
+        // Enable/disable: disabled hitboxes are skipped in all collision checks
+        void SetEnabled(bool enabled) { m_Enabled = enabled; }
+        bool IsEnabled() const { return m_Enabled; }
+
         // Get all hitboxes in the scene for collision checking
         static const std::vector<HitboxComponent*>& GetAllHitboxes() { return s_AllHitboxes; }
 
@@ -41,6 +45,7 @@ namespace dae
         float m_Height{};
         glm::vec2 m_Offset{}; // Offset from GameObject position
         HitboxType m_Type{};
+        bool m_Enabled{ true }; // Hitbox enabled/disabled state
 
         // Static registry of all hitboxes for collision detection
         static std::vector<HitboxComponent*> s_AllHitboxes;
