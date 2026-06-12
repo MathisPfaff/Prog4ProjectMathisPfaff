@@ -25,11 +25,20 @@ namespace dae
     private:
         enum class Mode { Inflating, Deflating };
 
+        void UpdateScale(GameObject* owner);
+        int GetCurrentStage() const;
+
         GameObject* m_pGridObject{};
         float       m_InflateLevel{ 0.f };
+        int         m_CurrentStage{ 0 };  // tracks which scale stage we're on
         Mode        m_Mode{ Mode::Inflating };
 
         static constexpr float k_MaxInflate{ 4.5f };
-        static constexpr float k_DeflateRate{ 1.0f }; // units/second (4.5s to fully deflate from max)
+        static constexpr float k_DeflateRate{ 1.0f };   // units/second
+        static constexpr float k_BaseScale{ 2.0f };      // normal enemy scale (stage 0)
+        static constexpr float k_StageIncrement{ 1.5f }; // inflate level per stage
+        
+        // Scale per stage: [0]=2.0f, [1]=2.5f, [2]=3.0f, [3]=3.5f
+        static constexpr float k_StageScales[4] = { 2.0f, 2.5f, 3.0f, 3.5f };
     };
 }
