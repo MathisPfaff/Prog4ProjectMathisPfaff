@@ -9,26 +9,26 @@
 
 namespace dae
 {
-    PookaInflatingState::PookaInflatingState(GameObject* pGridObject, float inheritedInflateLevel)
+    PookaInflatingState::PookaInflatingState(GameObject* pGridObject,
+                                             float inheritedInflateLevel,
+                                             std::string walkTexture,
+                                             std::string inflateTexture)
         : m_pGridObject(pGridObject)
         , m_InflateLevel(inheritedInflateLevel)
+        , m_WalkTexture(std::move(walkTexture))
+        , m_InflateTexture(std::move(inflateTexture))
     {
         m_CurrentStage = GetCurrentStage();
     }
 
     void PookaInflatingState::OnEnter(GameObject* owner)
     {
-        // Set inflate texture once
         if (auto* tex = owner->GetComponent<TextureComponent>())
-            tex->SetTexture("PookaInflateStage0.png");
+            tex->SetTexture(m_InflateTexture);
 
-        // Enemy must not damage the player while inflating or deflating.
-        // We use SetCanDamage (not SetEnabled) so the pump can still detect the
-        // hitbox for reconnect purposes.
         if (auto* hb = owner->GetComponent<HitboxComponent>())
             hb->SetCanDamage(false);
 
-        // Set initial scale based on inherited inflate level (handles reconnects)
         UpdateScale(owner);
     }
 
@@ -36,16 +36,15 @@ namespace dae
     {
         if (m_Mode == Mode::Deflating)
         {
-            // m_InflateLevel doubles as the deflate timer (in seconds)
             m_InflateLevel -= GameTime::GetInstance().GetDeltaTime() * k_DeflateRate;
             if (m_InflateLevel <= 0.f)
             {
                 m_InflateLevel = 0.f;
-                return std::make_unique<PookaWalkingState>(m_pGridObject);
+                return std::make_unique<PookaWalkingState>(m_pGridObject, 10.f, 60.f,
+                                                           m_WalkTexture, "PookaGhost.png");
             }
         }
 
-        // Check if we crossed a stage threshold and need to update scale
         const int newStage = GetCurrentStage();
         if (newStage != m_CurrentStage)
         {
@@ -58,14 +57,12 @@ namespace dae
 
     void PookaInflatingState::OnExit(GameObject* owner)
     {
-        // Restore damage when the enemy returns to walking state
         if (auto* hb = owner->GetComponent<HitboxComponent>())
             hb->SetCanDamage(true);
 
-        // Restore normal walking texture and scale
         if (auto* tex = owner->GetComponent<TextureComponent>())
         {
-            tex->SetTexture("Pooka.png");
+            tex->SetTexture(m_WalkTexture);
             tex->SetScale(k_BaseScale);
         }
     }
@@ -78,7 +75,6 @@ namespace dae
 
     int PookaInflatingState::GetCurrentStage() const
     {
-        // Stage thresholds: 0.0-1.5 = stage 0, 1.5-3.0 = stage 1, 3.0-4.5 = stage 2, 4.5 = stage 3
         if (m_InflateLevel >= 4.5f) return 3;
         if (m_InflateLevel >= 3.0f) return 2;
         if (m_InflateLevel >= 1.5f) return 1;
@@ -88,11 +84,8 @@ namespace dae
     void PookaInflatingState::UpdateScale(GameObject* owner)
     {
         if (!owner) return;
-
         auto* tex = owner->GetComponent<TextureComponent>();
         if (!tex) return;
-
-        // Only update scale based on current stage
         tex->SetScale(k_StageScales[m_CurrentStage]);
     }
 }

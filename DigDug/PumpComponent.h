@@ -7,6 +7,7 @@ namespace dae
     class GridComponent;
     class HitboxComponent;
     class PookaComponent;
+    class FygarComponent;
 
     class PumpComponent final : public BaseComponent
     {
@@ -19,16 +20,9 @@ namespace dae
         void LateUpdate()      override {}
         void Render()    const override;
 
-        // Pressed binding: starts the beam when idle; no-ops otherwise
         void Fire();
-
-        // Pressed binding (same button): +k_InflatePulse per press when stuck
         void InflatePulse();
-
-        // Held binding (same button): sets flag so UpdateStuck inflates continuously
         void PumpHeld();
-
-        // Any non-pump input (e.g. movement): releases beam, enemy starts deflating
         void ReleaseStuck();
 
         bool IsActive() const { return m_State != PumpState::Idle; }
@@ -43,19 +37,27 @@ namespace dae
 
         bool IsSubCellBlocked(float relX, float relY) const;
 
+        // Generic helpers so UpdateStuck / ReleaseStuck / InflatePulse
+        // don't need to branch on which enemy type is stuck
+        bool  HasStuckEnemy()           const;
+        bool  StuckEnemyAddInflate(float amount);
+        void  StuckEnemyStartDeflating();
+        void  ClearStuckEnemy();
+
         GameObject*      m_pGridObject{};
         HitboxComponent* m_pHitbox{};
-        PookaComponent*  m_pStuckEnemy{};        // non-null only in Stuck state
+        PookaComponent*  m_pStuckEnemy     {};   // non-null only in Stuck state (Pooka)
+        FygarComponent*  m_pStuckEnemy_Fygar{};  // non-null only in Stuck state (Fygar)
 
         PumpState  m_State{ PumpState::Idle };
         glm::vec2  m_FiringDirection{ 1.f, 0.f };
         float      m_CurrentLength{ 0.f };
-        bool       m_PumpHeldThisFrame{ false }; // set by PumpHeld(), consumed in UpdateStuck
+        bool       m_PumpHeldThisFrame{ false };
 
-        static constexpr float k_MaxCells{ 2.f };
-        static constexpr float k_ExtendSpeed{ 200.f };
-        static constexpr float k_RetractSpeed{ 350.f };
-        static constexpr float k_InflatePulse{ 1.5f };    // added per button press  (3 presses = dead)
-        static constexpr float k_InflateHeldRate{ 1.5f }; // added per second while held (3s = dead)
+        static constexpr float k_MaxCells      { 2.f   };
+        static constexpr float k_ExtendSpeed   { 200.f };
+        static constexpr float k_RetractSpeed  { 350.f };
+        static constexpr float k_InflatePulse  { 1.5f  };
+        static constexpr float k_InflateHeldRate{ 1.5f };
     };
 }

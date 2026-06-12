@@ -21,6 +21,7 @@ namespace dae
     void HitboxComponent::Update()
     {
         if (!m_Enabled) return;
+        if (!m_CanDamage) return;
 
         auto* owner = GetOwner();
         if (!owner) return;
@@ -31,18 +32,34 @@ namespace dae
             if (!other->GetOwner()) continue;
             if (!other->IsEnabled()) continue;
 
+            // ── Enemy body vs Player ────────────────────────────────────────
             if ((m_Type == HitboxType::Player && other->m_Type == HitboxType::Enemy) ||
                 (m_Type == HitboxType::Enemy  && other->m_Type == HitboxType::Player))
             {
-                // Inflating / deflating enemies must not hurt the player
                 const HitboxComponent* enemyHb = (m_Type == HitboxType::Enemy) ? this : other;
                 if (!enemyHb->m_CanDamage) continue;
 
                 if (Intersects(other))
                 {
                     auto* playerOwner = (m_Type == HitboxType::Player) ? owner : other->GetOwner();
-                    if (auto* healthComp = playerOwner->GetComponent<HealthComponent>())
-                        healthComp->TakeDamage(1);
+                    if (auto* health = playerOwner->GetComponent<HealthComponent>())
+                        health->TakeDamage(1);
+                }
+            }
+
+            // ── Fire breath vs Player ───────────────────────────────────────
+            if ((m_Type == HitboxType::Fire   && other->m_Type == HitboxType::Player) ||
+                (m_Type == HitboxType::Player  && other->m_Type == HitboxType::Fire))
+            {
+                // Fire hitbox owns the CanDamage flag; player side is always true
+                const HitboxComponent* fireHb = (m_Type == HitboxType::Fire) ? this : other;
+                if (!fireHb->m_CanDamage) continue;
+
+                if (Intersects(other))
+                {
+                    auto* playerOwner = (m_Type == HitboxType::Player) ? owner : other->GetOwner();
+                    if (auto* health = playerOwner->GetComponent<HealthComponent>())
+                        health->TakeDamage(1);
                 }
             }
         }
@@ -61,8 +78,10 @@ namespace dae
         SDL_FRect rect{ left, top, m_Width, m_Height };
 
         SDL_Color color;
-        if (!m_CanDamage)
-            color = { 255, 165, 0, 128 }; // orange = inflating / deflating
+        if (m_Type == HitboxType::Fire)
+            color = { 255, 80, 0, 180 };   // orange-red = fire
+        else if (!m_CanDamage)
+            color = { 255, 165, 0, 128 };  // orange = inflating/deflating
         else
             color = (m_Type == HitboxType::Player) ? SDL_Color{ 0, 255, 0, 128 }
                                                     : SDL_Color{ 255, 0, 0, 128 };

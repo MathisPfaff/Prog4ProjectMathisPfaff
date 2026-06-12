@@ -27,6 +27,8 @@
 #include "PumpComponent.h"
 #include "PumpCommand.h"
 #include "PumpHeldCommand.h"
+#include "FireBreathComponent.h"
+#include "FygarComponent.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -213,6 +215,17 @@ static void load()
     pooka->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Enemy);
 
     scene.Add(std::move(pooka));
+
+    // ── Fygar ─────────────────────────────────────────────────────────────
+    float fygarX{}, fygarY{};
+    pGrid->CellToWorld(9, 5, fygarX, fygarY);
+    auto fygar = std::make_unique<dae::GameObject>();
+    fygar->AddComponent<dae::TextureComponent>("Fygar.png", 2.f);
+    fygar->SetLocalPosition(pGridRaw->GetWorldPosition() + glm::vec3(fygarX, fygarY, 0.f));
+    fygar->AddComponent<dae::HitboxComponent>(36.f, 36.f, dae::HitboxType::Enemy);
+    fygar->AddComponent<dae::FireBreathComponent>(pGridRaw);  // must be added before FygarComponent
+    fygar->AddComponent<dae::FygarComponent>(pGridRaw);       // AI is baked in, like PookaComponent
+    scene.Add(std::move(fygar));
 }
 
 int main(int, char*[])

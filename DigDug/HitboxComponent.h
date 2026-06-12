@@ -10,7 +10,8 @@ namespace dae
         Player,
         Enemy,
         Projectile,
-        Pump
+        Pump,
+        Fire      // Fygar fire breath – damages Player only
     };
 
     class HitboxComponent final : public BaseComponent
@@ -33,13 +34,9 @@ namespace dae
         void SetSize(float width, float height) { m_Width = width; m_Height = height; }
         void SetOffset(float x, float y) { m_Offset = glm::vec2(x, y); }
 
-        // Fully disables the hitbox (skipped in all collision loops)
         void SetEnabled(bool enabled) { m_Enabled = enabled; }
         bool IsEnabled() const { return m_Enabled; }
 
-        // Controls whether this hitbox participates in damage dealing.
-        // Separate from IsEnabled so the hitbox stays detectable (e.g. for pump reconnect)
-        // while not hurting the player.
         void SetCanDamage(bool canDamage) { m_CanDamage = canDamage; }
         bool CanDamage() const { return m_CanDamage; }
 

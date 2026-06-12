@@ -43,16 +43,20 @@ namespace dae
 {
     PookaWalkingState::PookaWalkingState(GameObject* pGridObject,
                                          float walkDuration,
-                                         float speed)
+                                         float speed,
+                                         std::string walkTexture,
+                                         std::string ghostTexture)
         : m_pGridObject(pGridObject)
         , m_WalkDuration(walkDuration)
         , m_Speed(speed)
+        , m_WalkTexture(std::move(walkTexture))
+        , m_GhostTexture(std::move(ghostTexture))
     {}
 
     void PookaWalkingState::OnEnter(GameObject* owner)
     {
         if (auto* tex = owner->GetComponent<TextureComponent>())
-            tex->SetTexture("Pooka.png");
+            tex->SetTexture(m_WalkTexture);
 
         m_Timer     = 0.f;
         m_HasTarget = false;
@@ -105,7 +109,7 @@ namespace dae
         if (!m_HasTarget)
         {
             if (m_Timer >= m_WalkDuration && m_pGridObject)
-                return std::make_unique<PookaGhostState>(m_pGridObject);
+                return std::make_unique<PookaGhostState>(m_pGridObject, 35.f, m_GhostTexture, m_WalkTexture);
             return nullptr;
         }
 
@@ -121,7 +125,7 @@ namespace dae
 
             // Transition to ghost only at a cell centre (smooth handoff)
             if (m_Timer >= m_WalkDuration)
-                return std::make_unique<PookaGhostState>(m_pGridObject);
+                return std::make_unique<PookaGhostState>(m_pGridObject, 35.f, m_GhostTexture, m_WalkTexture);
 
             PickNextCell(m_TargetCol, m_TargetRow, m_DirX, m_DirY);
         }

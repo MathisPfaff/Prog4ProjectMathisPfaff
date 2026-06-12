@@ -3,6 +3,7 @@
 #include "GridComponent.h"
 #include "HitboxComponent.h"
 #include "PookaComponent.h"
+#include "FygarComponent.h"
 #include "PlayerMovementComponent.h"
 #include "GameTime.h"
 #include "Renderer.h"
@@ -16,8 +17,33 @@ namespace dae
         : BaseComponent(owner)
         , m_pGridObject(pGridObject)
     {
-        // Zero-sized pump hitbox; resized each frame while the beam is active
         m_pHitbox = owner->AddComponent<HitboxComponent>(0.f, 0.f, HitboxType::Pump);
+    }
+
+    // ── Generic stuck-enemy helpers ─────────────────────────────────────────
+
+    bool PumpComponent::HasStuckEnemy() const
+    {
+        return m_pStuckEnemy != nullptr || m_pStuckEnemy_Fygar != nullptr;
+    }
+
+    bool PumpComponent::StuckEnemyAddInflate(float amount)
+    {
+        if (m_pStuckEnemy)      return m_pStuckEnemy->AddInflate(amount);
+        if (m_pStuckEnemy_Fygar) return m_pStuckEnemy_Fygar->AddInflate(amount);
+        return false;
+    }
+
+    void PumpComponent::StuckEnemyStartDeflating()
+    {
+        if (m_pStuckEnemy)       m_pStuckEnemy->StartDeflating();
+        if (m_pStuckEnemy_Fygar) m_pStuckEnemy_Fygar->StartDeflating();
+    }
+
+    void PumpComponent::ClearStuckEnemy()
+    {
+        m_pStuckEnemy      = nullptr;
+        m_pStuckEnemy_Fygar = nullptr;
     }
 
     // ── Public interface ────────────────────────────────────────────────────
@@ -42,13 +68,11 @@ namespace dae
 
     void PumpComponent::InflatePulse()
     {
-        // +1.5f per press – 3 presses kills the enemy
-        if (m_State != PumpState::Stuck || !m_pStuckEnemy) return;
+        if (m_State != PumpState::Stuck || !HasStuckEnemy()) return;
 
-        if (m_pStuckEnemy->AddInflate(k_InflatePulse))
+        if (StuckEnemyAddInflate(k_InflatePulse))
         {
-            // Enemy just died; clean up beam immediately
-            m_pStuckEnemy  = nullptr;
+            ClearStuckEnemy();
             m_CurrentLength = 0.f;
             m_State = PumpState::Idle;
         }
@@ -56,7 +80,6 @@ namespace dae
 
     void PumpComponent::PumpHeld()
     {
-        // Flag consumed in UpdateStuck every frame; no-ops outside Stuck state
         if (m_State == PumpState::Stuck)
             m_PumpHeldThisFrame = true;
     }
@@ -65,12 +88,8 @@ namespace dae
     {
         if (m_State != PumpState::Stuck) return;
 
-        if (m_pStuckEnemy)
-        {
-            // Enemy starts deflating; m_InflateLevel becomes the deflate timer
-            m_pStuckEnemy->StartDeflating();
-            m_pStuckEnemy = nullptr;
-        }
+        StuckEnemyStartDeflating();
+        ClearStuckEnemy();
 
         m_CurrentLength = 0.f;
         m_State = PumpState::Idle;
@@ -90,9 +109,7 @@ namespace dae
         default: break;
         }
 
-        // Always clear the held flag after it has been consumed (or ignored)
         m_PumpHeldThisFrame = false;
-
         UpdateHitbox();
     }
 
@@ -107,7 +124,6 @@ namespace dae
 
         const float newLength = std::min(m_CurrentLength + k_ExtendSpeed * dt, maxLength);
 
-        // Tip in grid-relative space
         const glm::vec3 gridOrigin  = m_pGridObject->GetWorldPosition();
         const glm::vec3 playerWorld = GetOwner()->GetWorldPosition();
         const glm::vec2 relOrigin   = { playerWorld.x - gridOrigin.x,
@@ -121,8 +137,6 @@ namespace dae
         }
 
         m_CurrentLength = newLength;
-
-        // Sync hitbox before intersection test so Intersects() is accurate
         UpdateHitbox();
 
         // ── Enemy hit / reconnect scan ──────────────────────────────────────
@@ -131,20 +145,25 @@ namespace dae
             if (!hb || hb == m_pHitbox)            continue;
             if (hb->GetType() != HitboxType::Enemy) continue;
 
-            auto* enemyObj  = hb->GetOwner();
+            auto* enemyObj = hb->GetOwner();
             if (!enemyObj) continue;
 
-            auto* pookaComp = enemyObj->GetComponent<PookaComponent>();
-            // IsPumpable() = false for ghost + actively-inflating enemy
-            if (!pookaComp || !pookaComp->IsPumpable()) continue;
-
-            if (!m_pHitbox->Intersects(hb)) continue;
-
-            // Latch beam to enemy (fresh hit or reconnect after deflation started)
-            m_pStuckEnemy = pookaComp;
-            pookaComp->BeginInflating();
-            m_State = PumpState::Stuck;
-            return;
+            if (auto* pooka = enemyObj->GetComponent<PookaComponent>())
+            {
+                if (!pooka->IsPumpable() || !m_pHitbox->Intersects(hb)) continue;
+                m_pStuckEnemy = pooka;
+                pooka->BeginInflating();
+                m_State = PumpState::Stuck;
+                return;
+            }
+            if (auto* fygar = enemyObj->GetComponent<FygarComponent>())
+            {
+                if (!fygar->IsPumpable() || !m_pHitbox->Intersects(hb)) continue;
+                m_pStuckEnemy_Fygar = fygar;
+                fygar->BeginInflating();
+                m_State = PumpState::Stuck;
+                return;
+            }
         }
         // ───────────────────────────────────────────────────────────────────
 
@@ -164,21 +183,18 @@ namespace dae
 
     void PumpComponent::UpdateStuck(float dt)
     {
-        // Safety: if the enemy object was destroyed externally, clean up
-        if (!m_pStuckEnemy)
+        if (!HasStuckEnemy())
         {
             m_CurrentLength = 0.f;
             m_State = PumpState::Idle;
             return;
         }
 
-        // Held-button continuous inflation (1.5 units/s → 3 s to kill from 0)
         if (m_PumpHeldThisFrame)
         {
-            if (m_pStuckEnemy->AddInflate(k_InflateHeldRate * dt))
+            if (StuckEnemyAddInflate(k_InflateHeldRate * dt))
             {
-                // Enemy died from continuous pumping
-                m_pStuckEnemy  = nullptr;
+                ClearStuckEnemy();
                 m_CurrentLength = 0.f;
                 m_State = PumpState::Idle;
             }
@@ -194,9 +210,7 @@ namespace dae
 
         int subCol{}, subRow{};
         if (!grid->WorldToSubCell(relX, relY, subCol, subRow)) return true;
-
         if (grid->IsGroundSubRow(subRow)) return false;
-
         return !grid->IsSubCellDug(subCol, subRow);
     }
 
@@ -245,7 +259,6 @@ namespace dae
 
         SDL_Renderer* r = Renderer::GetInstance().GetSDLRenderer();
 
-        // Green = extending/retracting; yellow = stuck on enemy
         if (m_State == PumpState::Stuck)
             SDL_SetRenderDrawColor(r, 255, 220, 0, 255);
         else

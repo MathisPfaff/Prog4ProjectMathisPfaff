@@ -10,15 +10,17 @@
 
 namespace dae
 {
-    PookaGhostState::PookaGhostState(GameObject* pGridObject, float ghostSpeed)
+    PookaGhostState::PookaGhostState(GameObject* pGridObject, float ghostSpeed, std::string ghostTexture, std::string walkTexture)
         : m_pGridObject(pGridObject)
         , m_GhostSpeed(ghostSpeed)
+        , m_GhostTexture(std::move(ghostTexture))
+        , m_WalkTexture(std::move(walkTexture))
     {}
 
     void PookaGhostState::OnEnter(GameObject* owner)
     {
         if (auto* tex = owner->GetComponent<TextureComponent>())
-            tex->SetTexture("PookaGhost.png");
+            tex->SetTexture(m_GhostTexture);
 
         m_HasTarget = false;
 
@@ -87,7 +89,7 @@ namespace dae
         {
             // Snap exactly to target cell centre, then hand off to walking state
             owner->SetLocalPosition(m_TargetWorldPos);
-            return std::make_unique<PookaWalkingState>(m_pGridObject);
+            return std::make_unique<PookaWalkingState>(m_pGridObject, 10.f, 60.f, m_WalkTexture, m_GhostTexture);
         }
 
         owner->SetLocalPosition(currentPos + m_MoveDir * step);
