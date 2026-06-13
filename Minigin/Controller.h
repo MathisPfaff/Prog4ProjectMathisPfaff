@@ -41,6 +41,9 @@ namespace dae
         // Y axis matches screen space: positive = down.
         glm::vec2 GetLeftStick() const;
 
+        // Returns true if the physical controller is currently plugged in.
+        bool IsConnected() const;
+
         unsigned int GetIndex() const { return m_ControllerIndex; }
 
     private:

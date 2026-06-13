@@ -239,7 +239,7 @@ namespace dae
         health->AddObserver(this);
 
         player->AddComponent<ScoreComponent>();
-        player->AddComponent<HitboxComponent>(36.f, 36.f, HitboxType::Player);
+        player->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Player);
         player->AddComponent<PlayerMovementComponent>(m_pGridObject);
         player->AddComponent<PumpComponent>(m_pGridObject);
 
@@ -295,7 +295,7 @@ namespace dae
         auto pooka = std::make_unique<GameObject>();
         pooka->SetLocalPosition(spawnWorld);
         pooka->AddComponent<TextureComponent>("Pooka.png", 2.f);
-        pooka->AddComponent<HitboxComponent>(36.f, 36.f, HitboxType::Enemy);
+        pooka->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Enemy);
         pooka->AddComponent<PookaComponent>(m_pGridObject);
 
         m_EnemySpawns.push_back({ col, row, spawnWorld, pooka.get() });
@@ -318,7 +318,7 @@ namespace dae
         auto fygar = std::make_unique<GameObject>();
         fygar->SetLocalPosition(spawnWorld);
         fygar->AddComponent<TextureComponent>("Fygar.png", 2.f);
-        fygar->AddComponent<HitboxComponent>(36.f, 36.f, HitboxType::Enemy);
+        fygar->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Enemy);
         fygar->AddComponent<FireBreathComponent>(m_pGridObject);
         fygar->AddComponent<FygarComponent>(m_pGridObject);
 
@@ -342,7 +342,7 @@ namespace dae
         player2->AddComponent<TextureComponent>("Player2.png", 2.f);
         player2->AddComponent<HealthComponent>(4);
         player2->AddComponent<ScoreComponent>();
-        player2->AddComponent<HitboxComponent>(36.f, 36.f, HitboxType::Player);
+        player2->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Player);
         player2->AddComponent<PlayerMovementComponent>(m_pGridObject);
         player2->AddComponent<PumpComponent>(m_pGridObject);
 

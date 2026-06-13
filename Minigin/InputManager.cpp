@@ -97,7 +97,7 @@ namespace dae
     void InputManager::BindControllerLeftStick(unsigned int controllerIndex,
                                                std::unique_ptr<Command> command)
     {
-        GetOrCreateController(controllerIndex);   // ensure controller is registered & updated
+        GetOrCreateController(controllerIndex);
         AxisBinding ab;
         ab.command = std::move(command);
         m_AxisBindings.push_back(std::move(ab));
@@ -137,5 +137,10 @@ namespace dae
 
         m_Controllers.push_back(std::make_unique<Controller>(index));
         return m_Controllers.back().get();
+    }
+
+    bool InputManager::IsControllerConnected(unsigned int index)
+    {
+        return GetOrCreateController(index)->IsConnected();
     }
 }

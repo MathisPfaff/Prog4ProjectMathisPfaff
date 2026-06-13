@@ -9,6 +9,8 @@
 #include "Controller.h"
 #include <glm/glm.hpp>
 #include <SDL3/SDL.h>
+#include <memory>
+
 
 namespace dae
 {
@@ -23,24 +25,49 @@ namespace dae
         manager->SpawnPooka(9, 9);
         manager->SpawnFygar(9, 5);
 
+        auto& input = InputManager::GetInstance();
+
         switch (m_Mode)
         {
         case GameMode::SinglePlayer:
         case GameMode::Versus:
             manager->SpawnPlayer(1, 1);
-            BindPlayer1Inputs(manager->GetPlayer());
+            // P1 gets keyboard + controller 0 (if connected)
+            BindPlayer1Inputs(manager->GetPlayer(),
+                              input.IsControllerConnected(0), 0);
             break;
 
         case GameMode::TwoPlayer:
+        {
             manager->SpawnPlayer (1,  1);
             manager->SpawnPlayer2(12, 1);
-            BindPlayer1Inputs(manager->GetPlayer());
-            BindPlayer2Inputs(manager->GetPlayer2());
+
+            const bool ctrl0 = input.IsControllerConnected(0);
+            const bool ctrl1 = input.IsControllerConnected(1);
+
+            if (ctrl1)
+            {
+                // Two pads connected: P1 = keyboard + ctrl0, P2 = ctrl1
+                BindPlayer1Inputs(manager->GetPlayer(),  /*includeController=*/true, 0);
+                BindPlayer2Inputs(manager->GetPlayer2(), 1);
+            }
+            else if (ctrl0)
+            {
+                // One pad connected: P1 = keyboard only, P2 = ctrl0
+                BindPlayer1Inputs(manager->GetPlayer(),  /*includeController=*/false, 0);
+                BindPlayer2Inputs(manager->GetPlayer2(), 0);
+            }
+            else
+            {
+                // No pads: both players on keyboard (P1=WASD, P2 has no controller)
+                BindPlayer1Inputs(manager->GetPlayer(),  /*includeController=*/false, 0);
+            }
             break;
+        }
         }
     }
 
-    void PlayingState::BindPlayer1Inputs(GameObject* player)
+    void PlayingState::BindPlayer1Inputs(GameObject* player, bool includeController, unsigned int controllerIndex)
     {
         if (!player) return;
         auto& input = InputManager::GetInstance();
@@ -53,21 +80,22 @@ namespace dae
         input.BindKeyboard(SDL_SCANCODE_SPACE, KeyState::Pressed, std::make_unique<PumpCommand>(player));
         input.BindKeyboard(SDL_SCANCODE_SPACE, KeyState::Held,    std::make_unique<PumpHeldCommand>(player));
 
-        // Controller 0 – left joystick (NOT DPad) + Button A
-        input.BindControllerLeftStick(0, std::make_unique<JoystickMoveCommand>(player, 0));
-        input.BindController(0, Controller::ControllerButton::ButtonA, KeyState::Pressed, std::make_unique<PumpCommand>(player));
-        input.BindController(0, Controller::ControllerButton::ButtonA, KeyState::Held,    std::make_unique<PumpHeldCommand>(player));
+        if (includeController)
+        {
+            input.BindControllerLeftStick(controllerIndex, std::make_unique<JoystickMoveCommand>(player, controllerIndex));
+            input.BindController(controllerIndex, Controller::ControllerButton::ButtonA, KeyState::Pressed, std::make_unique<PumpCommand>(player));
+            input.BindController(controllerIndex, Controller::ControllerButton::ButtonA, KeyState::Held,    std::make_unique<PumpHeldCommand>(player));
+        }
     }
 
-    void PlayingState::BindPlayer2Inputs(GameObject* player)
+    void PlayingState::BindPlayer2Inputs(GameObject* player, unsigned int controllerIndex)
     {
         if (!player) return;
         auto& input = InputManager::GetInstance();
 
-        // Controller 1 – left joystick + Button A
-        input.BindControllerLeftStick(1, std::make_unique<JoystickMoveCommand>(player, 1));
-        input.BindController(1, Controller::ControllerButton::ButtonA, KeyState::Pressed, std::make_unique<PumpCommand>(player));
-        input.BindController(1, Controller::ControllerButton::ButtonA, KeyState::Held,    std::make_unique<PumpHeldCommand>(player));
+        input.BindControllerLeftStick(controllerIndex, std::make_unique<JoystickMoveCommand>(player, controllerIndex));
+        input.BindController(controllerIndex, Controller::ControllerButton::ButtonA, KeyState::Pressed, std::make_unique<PumpCommand>(player));
+        input.BindController(controllerIndex, Controller::ControllerButton::ButtonA, KeyState::Held,    std::make_unique<PumpHeldCommand>(player));
     }
 
     void PlayingState::OnExit(GameManagerComponent*)
@@ -77,11 +105,8 @@ namespace dae
 
     std::unique_ptr<GameState> PlayingState::Update(GameManagerComponent* manager)
     {
-        if (manager->IsGameOver())
-            return std::make_unique<HighScoreState>(manager->GetFinalScore(), false);
-
-        if (manager->IsPlayerWon())
-            return std::make_unique<HighScoreState>(manager->GetFinalScore(), true);
+        if (manager->IsGameOver() || manager->IsPlayerWon())
+            return std::make_unique<HighScoreState>(manager->GetFinalScore(), manager->IsPlayerWon());
 
         return nullptr;
     }

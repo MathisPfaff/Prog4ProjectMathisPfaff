@@ -26,15 +26,16 @@ namespace dae
                               KeyState state);
 
         // ── Axis binding (left thumbstick) ────────────────────────────────────
-        // command->Execute() is called every frame; the command handles its own deadzone.
         void BindControllerLeftStick(unsigned int controllerIndex, std::unique_ptr<Command> command);
 
         // Clears ALL bindings (button + axis)
         void ClearBindings();
 
         // Returns (or creates) the controller for the given index.
-        // Pointer is stable as long as no new controllers are added to the same slot.
         Controller* GetOrCreateController(unsigned int index);
+
+        // Returns true if a physical controller is plugged into the given XInput slot.
+        bool IsControllerConnected(unsigned int index);
 
     private:
         enum class BindingType { Keyboard, Controller };

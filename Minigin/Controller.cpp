@@ -31,6 +31,12 @@ namespace dae
             m_ButtonsReleasedThisFrame = buttonChanges & ~m_CurrentState.Gamepad.wButtons;
         }
 
+        bool IsConnected() const
+        {
+            XINPUT_STATE state{};
+            return XInputGetState(m_ControllerIndex, &state) == ERROR_SUCCESS;
+        }
+
         bool IsDown    (unsigned int button) const { return (m_CurrentState.Gamepad.wButtons  & button) != 0; }
         bool IsUp      (unsigned int button) const { return (m_CurrentState.Gamepad.wButtons  & button) == 0; }
         bool IsPressed (unsigned int button) const { return (m_ButtonsPressedThisFrame        & button) != 0; }
@@ -38,18 +44,16 @@ namespace dae
 
         glm::vec2 GetLeftStick() const
         {
-            // XInput Y: positive = physical up → negate to match screen space (positive = down)
             const float x =  static_cast<float>(m_CurrentState.Gamepad.sThumbLX) / 32767.f;
             const float y = -static_cast<float>(m_CurrentState.Gamepad.sThumbLY) / 32767.f;
 
             const glm::vec2 stick{ x, y };
             const float mag = glm::length(stick);
 
-            // XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE = 7849
             constexpr float kDeadzone = 7849.f / 32767.f;
             if (mag < kDeadzone) return { 0.f, 0.f };
 
-            return glm::normalize(stick);   // unit vector, direction only
+            return glm::normalize(stick);
         }
 
     private:
@@ -118,6 +122,14 @@ namespace dae
             m_ButtonsReleasedThisFrame = changes & ~m_CurrentButtons;
         }
 
+        bool IsConnected() const
+        {
+            int count = 0;
+            SDL_JoystickID* pIDs = SDL_GetGamepads(&count);
+            SDL_free(pIDs);
+            return static_cast<int>(m_ControllerIndex) < count;
+        }
+
         bool IsDown    (unsigned int button) const { return (m_CurrentButtons           & button) != 0; }
         bool IsUp      (unsigned int button) const { return (m_CurrentButtons           & button) == 0; }
         bool IsPressed (unsigned int button) const { return (m_ButtonsPressedThisFrame  & button) != 0; }
@@ -127,7 +139,6 @@ namespace dae
         {
             if (!m_pGamepad) return { 0.f, 0.f };
 
-            // SDL3 LEFTY: negative = physical up = screen up → no negation needed
             const float x = static_cast<float>(SDL_GetGamepadAxis(m_pGamepad, SDL_GAMEPAD_AXIS_LEFTX)) / 32767.f;
             const float y = static_cast<float>(SDL_GetGamepadAxis(m_pGamepad, SDL_GAMEPAD_AXIS_LEFTY)) / 32767.f;
 
@@ -183,6 +194,7 @@ namespace dae
     Controller::~Controller() = default;
 
     void Controller::Update()                                      { m_pImpl->Update(); }
+    bool Controller::IsConnected() const                           { return m_pImpl->IsConnected(); }
     bool Controller::IsDown    (ControllerButton button) const     { return m_pImpl->IsDown    (static_cast<unsigned int>(button)); }
     bool Controller::IsUp      (ControllerButton button) const     { return m_pImpl->IsUp      (static_cast<unsigned int>(button)); }
     bool Controller::IsPressed (ControllerButton button) const     { return m_pImpl->IsPressed (static_cast<unsigned int>(button)); }

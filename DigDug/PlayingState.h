@@ -4,7 +4,7 @@
 
 namespace dae
 {
-	class GameObject;
+    class GameObject;
 
     class PlayingState final : public GameState
     {
@@ -19,7 +19,7 @@ namespace dae
     private:
         GameMode m_Mode;
 
-        void BindPlayer1Inputs(GameObject* player);
-        void BindPlayer2Inputs(GameObject* player);
+        void BindPlayer1Inputs(GameObject* player, bool includeController, unsigned int controllerIndex);
+        void BindPlayer2Inputs(GameObject* player, unsigned int controllerIndex);
     };
 }
