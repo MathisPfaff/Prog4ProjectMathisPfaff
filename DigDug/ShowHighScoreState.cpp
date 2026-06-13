@@ -33,7 +33,6 @@ namespace dae
         auto entryFont = res.LoadFont("Lingua.otf", 26);
         auto hintFont = res.LoadFont("Lingua.otf", 18);
 
-        // ── Title ─────────────────────────────────────────────────────────────
         {
             auto obj = std::make_unique<GameObject>();
             obj->SetLocalPosition(kSHSTitleX, kSHSTitleY);

@@ -34,7 +34,7 @@ namespace dae
     void HighScoreNameEntryComponent::ChangeLetter(int delta)
     {
         if (m_SelectedSlot < 0 || m_SelectedSlot >= 3)
-            return;   // on READY slot – nothing to cycle
+            return;
 
         int letter = m_Letters[m_SelectedSlot] - 'A';
         letter = (letter + delta + 26) % 26;

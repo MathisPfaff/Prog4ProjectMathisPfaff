@@ -54,8 +54,7 @@ namespace dae
         float      m_CurrentLength{ 0.f };
         bool       m_PumpHeldThisFrame{ false };
 
-        // Sound helpers
-        bool m_pumpingSoundActive{ false };  // true once the pumping sound has fired this Stuck session
+        bool m_pumpingSoundActive{ false };
 
         static constexpr float k_MaxCells      { 2.f   };
         static constexpr float k_ExtendSpeed   { 200.f };

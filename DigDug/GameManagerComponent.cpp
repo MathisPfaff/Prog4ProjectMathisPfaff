@@ -23,7 +23,6 @@
 
 namespace dae
 {
-    // Grid layout constants (must match Main.cpp window sizing)
     static constexpr float kSidebarWidth = 155.f;
     static constexpr float kGridOffsetY  =  30.f;
     static constexpr int   kGridCols     =  14;
@@ -32,7 +31,6 @@ namespace dae
     static constexpr float kGridWidth    = kGridCols * kCellSize;
     static constexpr float kGridHeight   = kGridRows * kCellSize;
 
-    // ── DigLevel: one clean pre-dug layout used for all game modes ────────────
     static void DigLevel(GridComponent* grid)
     {
         // Pooka 1 tunnel – horizontal, row 2 (yellow zone), cols 1–4
@@ -77,11 +75,9 @@ namespace dae
         m_pCurrentState.reset();
     }
 
-    // ── SpawnGrid ─────────────────────────────────────────────────────────────
 
     void GameManagerComponent::SpawnGrid()
     {
-        // Reset game-state flags for a fresh round
         m_GameOver       = false;
         m_PlayerWon      = false;
         m_NeedsRespawn   = false;
@@ -96,13 +92,12 @@ namespace dae
         gridObj->AddComponent<GridComponent>(kGridWidth, kGridHeight, kGridCols, kGridRows);
 
         auto* grid = gridObj->GetComponent<GridComponent>();
-        DigLevel(grid);   // ← replaces DigShapeA / DigShapeB / DigShapeC
+        DigLevel(grid);
 
         m_pGridObject = gridObj.get();
         scene.Add(std::move(gridObj));
     }
 
-    // ── Update ────────────────────────────────────────────────────────────────
 
     void GameManagerComponent::Update()
     {
@@ -129,11 +124,6 @@ namespace dae
                 ChangeState(std::move(nextState));
         }
     }
-
-    // ── LateUpdate ────────────────────────────────────────────────────────────
-    // Runs BEFORE Scene::LateUpdate() frees destroyed objects.
-    // Nullify any raw pointers that point to objects marked for destroy this frame
-    // so they are never dereferenced after the memory is freed.
 
     void GameManagerComponent::LateUpdate()
     {
@@ -170,8 +160,6 @@ namespace dae
         }
     }
 
-    // ── Observer ──────────────────────────────────────────────────────────────
-
     void GameManagerComponent::OnNotify(BaseComponent* entity, unsigned int eventID)
     {
         if (m_IsInvincible) return;
@@ -191,7 +179,6 @@ namespace dae
                 if (auto* sc = m_PlayerSpawn.gameObject->GetComponent<ScoreComponent>())
                     m_FinalScore += sc->GetScore();
 
-            // Add P2 score when in two-player mode
             if (m_Player2Spawn.gameObject)
                 if (auto* sc = m_Player2Spawn.gameObject->GetComponent<ScoreComponent>())
                     m_FinalScore += sc->GetScore();
@@ -200,7 +187,6 @@ namespace dae
         }
     }
 
-    // ── State machine ─────────────────────────────────────────────────────────
 
     void GameManagerComponent::ChangeState(std::unique_ptr<GameState> newState)
     {
@@ -213,7 +199,6 @@ namespace dae
             m_pCurrentState->OnEnter(this);
     }
 
-    // ── Entity spawning ───────────────────────────────────────────────────────
 
     void GameManagerComponent::SpawnPlayer(int col, int row)
     {
@@ -234,7 +219,7 @@ namespace dae
         health->AddObserver(this);
 
         player->AddComponent<ScoreComponent>();
-        player->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Player);
+        player->AddComponent<HitboxComponent>(30.f, 30.f, HitboxType::Player);
         player->AddComponent<PlayerMovementComponent>(m_pGridObject);
         player->AddComponent<PumpComponent>(m_pGridObject);
 
@@ -242,11 +227,8 @@ namespace dae
 
         scene.Add(std::move(player));
 
-        // Build the HUD now that the player's components exist
         SetupHUD();
     }
-
-    // ── SetupHUD ──────────────────────────────────────────────────────────────
 
     void GameManagerComponent::SetupHUD()
     {
@@ -274,8 +256,6 @@ namespace dae
         m_pScoreObserver = std::make_unique<ScoreDisplayObserver>(score, scoreText);
     }
 
-    // ── SpawnPooka ────────────────────────────────────────────────────────────
-
     void GameManagerComponent::SpawnPooka(int col, int row)
     {
         auto* grid = m_pGridObject->GetComponent<GridComponent>();
@@ -290,14 +270,12 @@ namespace dae
         auto pooka = std::make_unique<GameObject>();
         pooka->SetLocalPosition(spawnWorld);
         pooka->AddComponent<TextureComponent>("Pooka.png", 2.f);
-        pooka->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Enemy);
+        pooka->AddComponent<HitboxComponent>(30.f, 30.f, HitboxType::Enemy);
         pooka->AddComponent<PookaComponent>(m_pGridObject);
 
         m_EnemySpawns.push_back({ col, row, spawnWorld, pooka.get() });
         scene.Add(std::move(pooka));
     }
-
-    // ── SpawnFygar ────────────────────────────────────────────────────────────
 
     void GameManagerComponent::SpawnFygar(int col, int row)
     {
@@ -313,7 +291,7 @@ namespace dae
         auto fygar = std::make_unique<GameObject>();
         fygar->SetLocalPosition(spawnWorld);
         fygar->AddComponent<TextureComponent>("Fygar.png", 2.f);
-        fygar->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Enemy);
+        fygar->AddComponent<HitboxComponent>(30.f, 30.f, HitboxType::Enemy);
         fygar->AddComponent<FireBreathComponent>(m_pGridObject);
         fygar->AddComponent<FygarComponent>(m_pGridObject);
 
@@ -337,10 +315,10 @@ namespace dae
         player2->AddComponent<TextureComponent>("Player2.png", 2.f);
 
         auto* health = player2->AddComponent<HealthComponent>(4);
-        health->AddObserver(this);   // ← was missing: enemies never triggered a respawn
+        health->AddObserver(this);
 
         player2->AddComponent<ScoreComponent>();
-        player2->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Player);
+        player2->AddComponent<HitboxComponent>(30.f, 30.f, HitboxType::Player);
         player2->AddComponent<PlayerMovementComponent>(m_pGridObject);
         player2->AddComponent<PumpComponent>(m_pGridObject);
 
@@ -350,8 +328,6 @@ namespace dae
 
         SetupHUD2();
     }
-
-    // ── SetupHUD2 ─────────────────────────────────────────────────────────────
 
     void GameManagerComponent::SetupHUD2()
     {
@@ -364,7 +340,6 @@ namespace dae
         auto& scene = SceneManager::GetInstance().GetActiveScene();
         auto  font  = ResourceManager::GetInstance().LoadFont("Lingua.otf", 14);
 
-        // P2 lives – lower in the sidebar
         auto livesObj = std::make_unique<GameObject>();
         livesObj->SetLocalPosition(10.f, 470.f);
         auto* livesText = livesObj->AddComponent<TextComponent>("P2 Lives: 4", font, SDL_Color{ 100, 200, 255, 255 });
@@ -372,7 +347,6 @@ namespace dae
         scene.Add(std::move(livesObj));
         m_pLives2Observer = std::make_unique<LivesDisplayObserver>(health, livesText);
 
-        // P2 score
         auto scoreObj = std::make_unique<GameObject>();
         scoreObj->SetLocalPosition(10.f, 510.f);
         auto* scoreText = scoreObj->AddComponent<TextComponent>("P2 Score: 0", font, SDL_Color{ 100, 200, 255, 255 });
@@ -381,11 +355,8 @@ namespace dae
         m_pScore2Observer = std::make_unique<ScoreDisplayObserver>(score, scoreText);
     }
 
-    // ── Clear game world ──────────────────────────────────────────────────────
-
     void GameManagerComponent::ClearGameWorld()
     {
-        // Unregister observers while components are still alive
         if (m_pLivesObserver)  m_pLivesObserver->ClearReferences();
         if (m_pScoreObserver)  m_pScoreObserver->ClearReferences();
         if (m_pLives2Observer) m_pLives2Observer->ClearReferences();
@@ -436,8 +407,6 @@ namespace dae
         m_pGridObject = nullptr;
     }
 
-    // ── Respawn helpers ───────────────────────────────────────────────────────
-
     void GameManagerComponent::RespawnEntities()
     {
         if (m_PlayerSpawn.gameObject &&
@@ -452,7 +421,6 @@ namespace dae
             m_InvincibilityTimer = k_InvincibilityDuration;
         }
 
-        // ← was missing: Player 2 was never reset after a hit
         if (m_Player2Spawn.gameObject &&
             !m_Player2Spawn.gameObject->IsMarkedForDestroy())
         {
@@ -464,7 +432,6 @@ namespace dae
 
         for (auto& spawn : m_EnemySpawns)
         {
-            // nullptr means killed by pump – skip, it's gone
             if (spawn.gameObject && !spawn.gameObject->IsMarkedForDestroy())
                 ResetToSpawn(spawn);
         }

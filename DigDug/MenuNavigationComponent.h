@@ -17,10 +17,8 @@ namespace dae
         void LateUpdate()       override {}
         void Render() const     override {}
 
-        // Registers a button; the first one added is auto-selected
         void AddButton(MenuButtonComponent* button);
 
-        // delta: -1 = previous, +1 = next, wraps around
         void Navigate(int delta);
 
         int GetSelectedIndex() const { return m_SelectedIndex; }

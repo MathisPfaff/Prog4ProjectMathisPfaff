@@ -5,7 +5,6 @@ namespace dae
 {
     class HighScoreNameEntryComponent;
 
-    // Moves the highlighted slot left or right (D-Pad Left / Right)
     class HighScoreHSlotCommand final : public Command
     {
     public:

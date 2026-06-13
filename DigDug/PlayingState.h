@@ -19,7 +19,7 @@ namespace dae
     private:
         GameMode m_Mode;
 
-        void BindPlayer1Inputs(GameObject* player, bool includeController, unsigned int controllerIndex);
-        void BindPlayer2Inputs(GameObject* player, unsigned int controllerIndex);
+        void BindPlayer1Inputs   (GameObject* player, bool includeController, unsigned int controllerIndex);
+        void BindPlayer2Inputs   (GameObject* player, unsigned int controllerIndex);
     };
 }

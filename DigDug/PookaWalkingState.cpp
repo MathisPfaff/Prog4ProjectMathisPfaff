@@ -29,7 +29,6 @@ namespace
         return grid->IsSubCellDug(centerSubCol, centerSubRow);
     }
 
-    // Returns true when the enemy can immediately start moving from (col, row).
     bool IsWalkable(dae::GridComponent* grid, int col, int row)
     {
         for (const auto& d : kDirs)
@@ -38,9 +37,6 @@ namespace
         return false;
     }
 
-    // BFS from (startCol, startRow) to find the nearest cell the enemy can
-    // actually walk out of. Called when an enemy enters walking state from a
-    // position that is not on a tunnel (e.g. was a ghost mid-wall when pumped).
     std::pair<int,int> FindNearestWalkableCell(dae::GridComponent* grid,
                                                int startCol, int startRow)
     {
@@ -73,7 +69,7 @@ namespace
             }
             frontier = std::move(next);
         }
-        return { startCol, startRow }; // nothing found, fall back to original
+        return { startCol, startRow };
     }
 }
 
@@ -110,16 +106,15 @@ namespace dae
         if (!grid->WorldToCell(worldPos.x - gridOrigin.x,
                                worldPos.y - gridOrigin.y, col, row)) return;
 
-        // If the nearest cell has no walkable tunnel (e.g. the enemy was a ghost
-        // mid-wall when the pump caught it), find the closest cell that does.
+        
         std::tie(col, row) = FindNearestWalkableCell(grid, col, row);
 
-        // Snap to exact cell centre – eliminates any drift from prior state
+        
         float cx{}, cy{};
         grid->CellToWorld(col, row, cx, cy);
         owner->SetLocalPosition(gridOrigin + glm::vec3(cx, cy, 0.f));
 
-        // Pick any fully-passable direction (no previous direction constraint on entry)
+        
         std::vector<int> candidates;
         for (int i = 0; i < 4; ++i)
         {
@@ -128,7 +123,7 @@ namespace dae
             if (CanEnterCell(grid, col, row, nc, nr, kDirs[i].side))
                 candidates.push_back(i);
         }
-        if (candidates.empty()) return; // no passable directions – stay still
+        if (candidates.empty()) return;
 
         const int chosen = candidates[static_cast<size_t>(std::rand()) % candidates.size()];
         m_DirX      = kDirs[chosen].dx;

@@ -66,12 +66,7 @@ dae::Minigin::Minigin(const std::filesystem::path& dataPath,
 {
     PrintSDLVersion();
 
-#if USE_STEAMWORKS
-    if (!SteamAPI_Init())
-        throw std::runtime_error(std::string("Fatal Error - Steam must be running to play this game (SteamAPI_Init() failed)."));
-    std::cout << "Steam initialized. Playing as: " << SteamFriends()->GetPersonaName() << "\n";
-    dae::SteamAchievements::GetInstance().Init();
-#endif
+
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
     {

@@ -9,8 +9,6 @@ namespace dae
     std::filesystem::path HighScoreRepository::FilePath(
         const std::filesystem::path& dataPath)
     {
-        // Make sure we always get an absolute path so ofstream can find it
-        // regardless of what the current working directory is at call-time.
         return std::filesystem::absolute(dataPath) / k_FileName;
     }
 
@@ -21,7 +19,7 @@ namespace dae
 
         std::ifstream file(FilePath(dataPath));
         if (!file.is_open())
-            return entries;   // file doesn't exist yet – that's fine
+            return entries;
 
         std::string line;
         while (std::getline(file, line))
@@ -42,23 +40,18 @@ namespace dae
     {
         const auto path = FilePath(dataPath);
 
-        // Ensure the directory exists before writing
         std::filesystem::create_directories(path.parent_path());
 
-        // Load existing entries and append the new one
         auto entries = Load(dataPath);
         entries.push_back({ name, score });
 
-        // Sort descending by score
         std::sort(entries.begin(), entries.end(),
             [](const HighScoreEntry& a, const HighScoreEntry& b)
             { return a.score > b.score; });
 
-        // Keep only the top N
         if (static_cast<int>(entries.size()) > k_MaxEntries)
             entries.resize(static_cast<std::size_t>(k_MaxEntries));
 
-        // Write – one "NAME SCORE" per line
         std::ofstream file(path);
         for (const auto& e : entries)
             file << e.name << ' ' << e.score << '\n';

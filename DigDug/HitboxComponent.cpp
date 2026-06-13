@@ -30,11 +30,10 @@ namespace dae
     {
         if (!m_Enabled) return;
 
-        // Tick the per-hitbox cooldown
         if (m_DamageCooldownTimer > 0.f)
         {
             m_DamageCooldownTimer -= GameTime::GetInstance().GetDeltaTime();
-            return; // still cooling down – don't deal damage this frame
+            return;
         }
 
         if (!m_CanDamage) return;
@@ -48,8 +47,6 @@ namespace dae
             if (!other->GetOwner()) continue;
             if (!other->IsEnabled()) continue;
 
-            // ── Enemy body hits Player ──────────────────────────────────────
-            // Only the ENEMY side triggers damage so the pair is only processed once.
             if (m_Type == HitboxType::Enemy && other->m_Type == HitboxType::Player)
             {
                 if (!m_CanDamage) continue;
@@ -60,15 +57,11 @@ namespace dae
                     if (auto* health = playerOwner->GetComponent<HealthComponent>())
                     {
                         health->TakeDamage(1);
-                        // Start cooldown on this enemy hitbox so it can't hit again
-                        // until the player has had time to respawn
                         m_DamageCooldownTimer = k_DamageCooldown;
                     }
                 }
             }
 
-            // ── Fire breath hits Player ─────────────────────────────────────
-            // Only the FIRE side triggers damage.
             if (m_Type == HitboxType::Fire && other->m_Type == HitboxType::Player)
             {
                 if (!m_CanDamage) continue;

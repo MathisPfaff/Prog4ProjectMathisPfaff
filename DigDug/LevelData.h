@@ -4,14 +4,12 @@
 
 namespace dae
 {
-    // ── Enemy type tag stored in the binary file ──────────────────────────────
     enum class EnemyType : uint8_t
     {
         Pooka = 0,
         Fygar = 1,
     };
 
-    // ── One enemy entry in the file ───────────────────────────────────────────
     struct EnemyEntry
     {
         EnemyType type{};
@@ -19,7 +17,6 @@ namespace dae
         uint8_t   row{};
     };
 
-    // ── Everything the PlayingState needs to build the scene ──────────────────
     struct LevelData
     {
         uint8_t player1Col{ 1 };

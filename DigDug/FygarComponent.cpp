@@ -99,7 +99,6 @@ namespace dae
 
     void FygarComponent::ResetToWalking()
     {
-        // Reuse the file-scope constants — do NOT redeclare them here
         SetState(std::make_unique<PookaWalkingState>(m_pGridObject, 10.f, 60.f, k_Walk, k_Ghost));
     }
 }

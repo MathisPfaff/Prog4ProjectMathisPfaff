@@ -19,12 +19,12 @@ namespace dae
         m_pFire = owner->GetComponent<FireBreathComponent>();
         if (m_pFire)
         {
-            m_pFire->SetFacingDirection(m_FireDirection); // always horizontal, guaranteed by FygarComponent
+            m_pFire->SetFacingDirection(m_FireDirection);
             m_pFire->Fire();
         }
     }
 
-    std::unique_ptr<PookaState> FygarBreathingState::Update(GameObject* /*owner*/)
+    std::unique_ptr<PookaState> FygarBreathingState::Update(GameObject*)
     {
         if (m_pFire && !m_pFire->IsActive())
             return std::make_unique<PookaWalkingState>(

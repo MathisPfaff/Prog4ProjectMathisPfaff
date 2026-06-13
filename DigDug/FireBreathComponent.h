@@ -24,15 +24,11 @@ namespace dae
         bool IsActive() const { return m_Active; }
         glm::vec2 GetFiringDirection() const { return m_FiringDirection; }
 
-        // Set before calling Fire(); horizontal component is what matters.
-        // Fire() enforces horizontal – a vertical direction will be snapped to right.
         void SetFacingDirection(const glm::vec2& dir) { m_FacingDirection = dir; }
 
     private:
         void UpdateHitbox();
 
-        // Identical contract to PumpComponent::IsSubCellBlocked:
-        // returns true when the subcell at grid-relative (relX,relY) blocks the fire
         bool IsFireBlocked(float relX, float relY) const;
 
         GameObject*      m_pGridObject{};

@@ -28,7 +28,6 @@ namespace dae
         void TriggerFireBreath();
         bool IsBreathing() const;
 
-        // Called by GameManagerComponent on respawn
         void ResetToWalking();
 
     private:

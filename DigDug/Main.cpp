@@ -10,7 +10,6 @@
 #include "ResourceManager.h"
 #include "TextComponent.h"
 #include "Scene.h"
-#include "FPSComponent.h"
 #include "GameObject.h"
 #include "GameManagerComponent.h"
 #include "ServiceLocator.h"
@@ -40,7 +39,6 @@ static void load()
 
     ss.LoadSound(DigDugSounds::Shot,    data + "Dig Dug - Shot.mp3");
     ss.LoadSound(DigDugSounds::Pumping, data + "Dig Dug - Pumping.mp3");
-    // Add your other sound files below when you have them:
     // ss.LoadSound(DigDugSounds::Miss,       data + "Dig Dug - Miss.mp3");
     // ss.LoadSound(DigDugSounds::HighScore,  data + "Dig Dug - HighScore.mp3");
     // ss.LoadMusic(DigDugSounds::InGameMusic, data + "Dig Dug - InGameMusic.mp3");
@@ -49,11 +47,6 @@ static void load()
     auto& scene = dae::SceneManager::GetInstance().CreateScene();
 
     auto fpsFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 20);
-    auto fpsObj  = std::make_unique<dae::GameObject>();
-    fpsObj->SetLocalPosition(8.f, 8.f);
-    fpsObj->AddComponent<dae::TextComponent>("FPS: 0.0", fpsFont, SDL_Color{ 0, 255, 0, 255 });
-    fpsObj->AddComponent<dae::FPSComponent>();
-    scene.Add(std::move(fpsObj));
 
     // ── GameManager ───────────────────────────────────────────────────────────
     auto managerObj = std::make_unique<dae::GameObject>();

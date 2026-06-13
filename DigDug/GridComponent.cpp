@@ -8,27 +8,17 @@
 
 namespace dae
 {
-    // ── Tunnel colour (black) ─────────────────────────────────────────────────
     static constexpr SDL_Color kColorTunnel{   0,   0,   0, 255 };
 
-    // ── Ground (sky) row colour – always solid blue ───────────────────────────
     static constexpr SDL_Color kColorGround{  40, 40, 200, 255 };
 
-    // ── Underground zone dirt colours ─────────────────────────────────────────
-    // Level 1 – rows 1-4   : Yellow
     static constexpr SDL_Color kColorZone1 { 210, 170,  30, 255 };
-    // Level 2 – rows 5-8   : Orange
     static constexpr SDL_Color kColorZone2 { 210, 105,  30, 255 };
-    // Level 3 – rows 9-12  : Dark Orange
     static constexpr SDL_Color kColorZone3 { 170,  65,  15, 255 };
-    // Level 4 – rows 13-15 : Dark Red
     static constexpr SDL_Color kColorZone4 { 130,  20,  10, 255 };
 
-    // Thickness (px) of tunnel-border walls drawn as filled rects
     static constexpr float kWallThickness = 2.f;
 
-    // Returns the zone colour for a given big-cell row.
-    // Row 0 (ground/sky) → blue; deeper rows get progressively darker.
     static SDL_Color DirtColorForRow(int row)
     {
         if (row <= 0)  return kColorGround;
@@ -38,13 +28,10 @@ namespace dae
         return kColorZone4;
     }
 
-    // Wall colour: use the deeper (higher row-index) of the two touching zones.
     static SDL_Color WallColor(int bigRowA, int bigRowB)
     {
         return DirtColorForRow(std::max(bigRowA, bigRowB));
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
 
     GridComponent::GridComponent(GameObject* owner,
                                  float totalWidth, float totalHeight,
@@ -62,7 +49,6 @@ namespace dae
                "GridComponent: grid must be exactly kFixedCols x kFixedRows (14x16)");
         assert(cols > 0 && rows > 0 && "GridComponent: cols and rows must be > 0");
 
-        // Ground row (row 0) is always fully open – pre-open all its sub-cells
         for (int col = 0; col < m_Cols; ++col)
         {
             const int baseSubCol = col * 3;
@@ -158,7 +144,6 @@ namespace dae
 
     void GridComponent::DigPlayerStep(int targetSubCol, int targetSubRow, int directionX, int directionY)
     {
-        // Never dig the ground row
         if (IsGroundSubRow(targetSubRow)) return;
 
         if (directionX != 0)
@@ -185,7 +170,6 @@ namespace dae
 
     void GridComponent::DigPlayerArea(int centerSubCol, int centerSubRow)
     {
-        // Never dig the ground row
         if (IsGroundSubRow(centerSubRow)) return;
 
         for (int deltaSubRow = -1; deltaSubRow <= 1; ++deltaSubRow)
@@ -222,7 +206,6 @@ namespace dae
         const float sw = GetSubCellWidth();
         const float sh = GetSubCellHeight();
 
-        // A subcell sc is FULLY inside when: sc*sw >= relLeft  AND  (sc+1)*sw <= relRight
         const int minSubCol = static_cast<int>(std::ceil(relLeft / sw));
         const int maxSubCol = static_cast<int>(std::floor(relRight / sw)) - 1;
         const int minSubRow = static_cast<int>(std::ceil(relTop / sh));
@@ -241,7 +224,6 @@ namespace dae
         const float sw = GetSubCellWidth();
         const float sh = GetSubCellHeight();
 
-        // A subcell sc OVERLAPS the rect when: sc*sw < relRight  AND  (sc+1)*sw > relLeft
         const int minSubCol = static_cast<int>(std::floor(relLeft / sw));
         const int maxSubCol = static_cast<int>(std::ceil(relRight / sw)) - 1;
         const int minSubRow = static_cast<int>(std::floor(relTop / sh));
@@ -259,7 +241,6 @@ namespace dae
     void GridComponent::PreDigCell(int col, int row, TunnelSide sides)
     {
         if (!IsValid(col, row)) return;
-        // Protect the ground row from accidental pre-digging calls
         if (IsGroundRow(row)) return;
 
         const int baseSubCol = col * 3;
@@ -299,9 +280,6 @@ namespace dae
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Render
-    // ─────────────────────────────────────────────────────────────────────────
     void GridComponent::Render() const
     {
         auto* renderer = dae::Renderer::GetInstance().GetSDLRenderer();
@@ -314,7 +292,6 @@ namespace dae
         const int   totalSubCols  = GetSubCols();
         const int   totalSubRows  = GetSubRows();
 
-        // ── 1. Background zone bands (all rows; row 0 draws as solid blue) ────
         for (int row = 0; row < m_Rows; ++row)
         {
             const SDL_Color c = DirtColorForRow(row);
@@ -328,13 +305,12 @@ namespace dae
             SDL_RenderFillRect(renderer, &band);
         }
 
-        // ── 2. Dug tunnel sub-cells – always black ────────────────────────────
         SDL_SetRenderDrawColor(renderer,
             kColorTunnel.r, kColorTunnel.g, kColorTunnel.b, kColorTunnel.a);
 
         for (int subRow = 0; subRow < totalSubRows; ++subRow)
         {
-            if (IsGroundSubRow(subRow)) continue;  // ground row stays its blue colour
+            if (IsGroundSubRow(subRow)) continue;
 
             for (int subCol = 0; subCol < totalSubCols; ++subCol)
             {
@@ -349,9 +325,6 @@ namespace dae
             }
         }
 
-        // ── 3. Tunnel border walls – thick filled rects in zone colour ────────
-        //  Colour rule: use the deeper (higher row index) of the two touching zones.
-        //  Thickness: kWallThickness pixels drawn INTO the dug (black) cell.
         for (int subRow = 0; subRow < totalSubRows; ++subRow)
         {
             if (IsGroundSubRow(subRow)) continue;
@@ -370,7 +343,6 @@ namespace dae
                 const int bigCol = subCol / 3;
                 const int bigRow = subRow / 3;
 
-                // ── Top edge ─────────────────────────────────────────────────
                 {
                     const int neighborSubRow = subRow - 1;
                     const int neighborBigRow = (neighborSubRow >= 0) ? neighborSubRow / 3 : bigRow;
@@ -390,7 +362,6 @@ namespace dae
                     }
                 }
 
-                // ── Bottom edge ───────────────────────────────────────────────
                 {
                     const int neighborSubRow = subRow + 1;
                     const int neighborBigRow = (neighborSubRow < totalSubRows) ? neighborSubRow / 3 : bigRow;
@@ -410,7 +381,6 @@ namespace dae
                     }
                 }
 
-                // ── Left edge ────────────────────────────────────────────────
                 {
                     const int neighborSubCol = subCol - 1;
 
@@ -429,7 +399,6 @@ namespace dae
                     }
                 }
 
-                // ── Right edge ────────────────────────────────────────────────
                 {
                     const int neighborSubCol = subCol + 1;
 

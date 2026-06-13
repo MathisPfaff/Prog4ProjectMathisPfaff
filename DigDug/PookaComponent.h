@@ -22,7 +22,6 @@ namespace dae
         void StartDeflating();
         bool AddInflate(float amount);
 
-        // Called by GameManagerComponent on respawn
         void ResetToWalking();
 
     private:

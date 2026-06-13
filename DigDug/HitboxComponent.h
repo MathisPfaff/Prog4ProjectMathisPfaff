@@ -50,7 +50,6 @@ namespace dae
         bool       m_Enabled  { true };
         bool       m_CanDamage{ true };
 
-        // Cooldown so one overlap = one hit, not 60 hits/sec
         static constexpr float k_DamageCooldown{ 1.0f };
         float m_DamageCooldownTimer{ 0.f };
 

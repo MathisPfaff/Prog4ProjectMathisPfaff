@@ -39,20 +39,17 @@ namespace dae
         void OnNotify(BaseComponent* entity, unsigned int eventID) override;
         void ChangeState(std::unique_ptr<GameState> newState);
 
-        // Called by game states
         void SpawnGrid();
         void SpawnPlayer (int col, int row);
-        void SpawnPlayer2(int col, int row);   // second human player
+        void SpawnPlayer2(int col, int row);
         void SpawnPooka  (int col, int row);
         void SpawnFygar  (int col, int row);
         void ClearGameWorld();
 
-        // Start-request – set by EnterCommand, polled by menu/end states
         void RequestStart()      { m_StartRequested = true; }
         bool IsStartRequested()  const { return m_StartRequested; }
         void ResetStartRequest() { m_StartRequested = false; }
 
-        // Accessors
         GameObject* GetGridObject() const { return m_pGridObject; }
         GameObject* GetPlayer()     const { return m_PlayerSpawn.gameObject; }
         GameObject* GetPlayer2()    const { return m_Player2Spawn.gameObject; }
@@ -75,13 +72,11 @@ namespace dae
         SpawnInfo              m_Player2Spawn{};
         std::vector<SpawnInfo> m_EnemySpawns{};
 
-        // HUD – player 1 (left sidebar, top)
         GameObject* m_pLivesDisplayObject{};
         GameObject* m_pScoreDisplayObject{};
         std::unique_ptr<LivesDisplayObserver> m_pLivesObserver{};
         std::unique_ptr<ScoreDisplayObserver> m_pScoreObserver{};
 
-        // HUD – player 2 (left sidebar, bottom)
         GameObject* m_pLives2DisplayObject{};
         GameObject* m_pScore2DisplayObject{};
         std::unique_ptr<LivesDisplayObserver> m_pLives2Observer{};

@@ -4,7 +4,6 @@
 
 namespace dae
 {
-    // ── Internal format constants ─────────────────────────────────────────────
     static constexpr char    kMagic[4] = { 'D', 'D', 'L', 'V' };
     static constexpr uint8_t kVersion = 1;
 
@@ -13,26 +12,22 @@ namespace dae
         std::ifstream f(filePath, std::ios::binary);
         if (!f.is_open()) return std::nullopt;
 
-        // Magic
         char magic[4]{};
         f.read(magic, 4);
         if (!f || std::memcmp(magic, kMagic, 4) != 0) return std::nullopt;
 
-        // Version
         uint8_t version{};
         f.read(reinterpret_cast<char*>(&version), 1);
         if (!f || version != kVersion) return std::nullopt;
 
         LevelData data{};
 
-        // Player spawn positions
         f.read(reinterpret_cast<char*>(&data.player1Col), 1);
         f.read(reinterpret_cast<char*>(&data.player1Row), 1);
         f.read(reinterpret_cast<char*>(&data.player2Col), 1);
         f.read(reinterpret_cast<char*>(&data.player2Row), 1);
         if (!f) return std::nullopt;
 
-        // Enemy list
         uint8_t enemyCount{};
         f.read(reinterpret_cast<char*>(&enemyCount), 1);
         if (!f) return std::nullopt;

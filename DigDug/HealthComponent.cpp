@@ -8,7 +8,7 @@ void dae::HealthComponent::Render() const {}
 
 void dae::HealthComponent::TakeDamage(int damage)
 {
-    if (m_CurrentHealth <= 0) return; // Already dead
+    if (m_CurrentHealth <= 0) return;
 
     m_CurrentHealth -= damage;
     if (m_CurrentHealth < 0) m_CurrentHealth = 0;

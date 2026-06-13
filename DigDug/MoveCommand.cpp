@@ -15,7 +15,6 @@ namespace dae
         auto* actor = GetGameObject();
         if (!actor) return;
 
-        // Any movement input releases a stuck pump beam
         if (auto* pump = actor->GetComponent<PumpComponent>())
             pump->ReleaseStuck();
 

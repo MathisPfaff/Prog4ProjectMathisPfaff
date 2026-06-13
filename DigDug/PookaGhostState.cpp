@@ -31,7 +31,6 @@ namespace dae
         const glm::vec3 gridOrigin = m_pGridObject->GetWorldPosition();
         const glm::vec3 worldPos   = owner->GetWorldPosition();
 
-        // Snap to current cell centre – clean start position, no drift
         int currentCol{}, currentRow{};
         if (!grid->WorldToCell(worldPos.x - gridOrigin.x,
                                worldPos.y - gridOrigin.y,
@@ -42,8 +41,6 @@ namespace dae
         const glm::vec3 snappedPos = gridOrigin + glm::vec3(cx, cy, 0.f);
         owner->SetLocalPosition(snappedPos);
 
-        // Collect all entered cells with at least one open side so the Pooka
-        // can actually start walking again once it arrives there
         std::vector<std::pair<int, int>> candidates;
         for (int r = 0; r < grid->GetRows(); ++r)
         {
@@ -59,7 +56,7 @@ namespace dae
             }
         }
 
-        if (candidates.empty()) return; // nowhere walkable to go, stay in ghost
+        if (candidates.empty()) return;
 
         const auto [tc, tr] = candidates[static_cast<size_t>(std::rand()) % candidates.size()];
         m_TargetCol = tc;
@@ -69,7 +66,6 @@ namespace dae
         grid->CellToWorld(m_TargetCol, m_TargetRow, tx, ty);
         m_TargetWorldPos = gridOrigin + glm::vec3(tx, ty, 0.f);
 
-        // Direction computed from the snapped (not drifted) position
         const glm::vec3 diff = m_TargetWorldPos - snappedPos;
         const float     len  = glm::length(diff);
         m_MoveDir   = len > 0.f ? diff / len : glm::vec3{ 1.f, 0.f, 0.f };
@@ -87,7 +83,6 @@ namespace dae
 
         if (step >= dist)
         {
-            // Snap exactly to target cell centre, then hand off to walking state
             owner->SetLocalPosition(m_TargetWorldPos);
             return std::make_unique<PookaWalkingState>(m_pGridObject, 10.f, 60.f, m_WalkTexture, m_GhostTexture);
         }

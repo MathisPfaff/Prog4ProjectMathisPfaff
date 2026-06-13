@@ -20,7 +20,6 @@ namespace dae
         void SetDesiredDirection(const glm::vec2& direction);
         glm::vec2 GetCurrentDirection() const { return m_CurrentDirection; }
 
-        // Called on respawn – clears all movement so the player starts from rest
         void Reset();
 
     private:

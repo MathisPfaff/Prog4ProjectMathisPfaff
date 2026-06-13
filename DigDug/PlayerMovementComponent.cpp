@@ -28,7 +28,7 @@ namespace dae
     void PlayerMovementComponent::Update()
     {
         UpdateMovement();
-        m_DesiredDirection = glm::vec2(0.f, 0.f); // Clear after processing
+        m_DesiredDirection = glm::vec2(0.f, 0.f);
     }
 
     void PlayerMovementComponent::UpdateMovement()
@@ -49,7 +49,6 @@ namespace dae
         {
             if (glm::length(m_DesiredDirection) < 0.1f) return;
 
-            // Check if we need to align to axis
             if (NeedsAlignment(m_DesiredDirection))
             {
                 StartAlignment(m_DesiredDirection);
@@ -57,7 +56,6 @@ namespace dae
             }
             else
             {
-                // Start moving immediately
                 m_CurrentDirection = m_DesiredDirection;
                 m_State = MoveState::Moving;
             }
@@ -66,14 +64,12 @@ namespace dae
 
         case MoveState::AlignToAxis:
         {
-            // Move toward alignment target
             const glm::vec3 toTarget = m_AlignmentTarget - currentWorldPos;
             const float dist = glm::length(toTarget);
             const float step = m_WalkingSpeed * dt;
 
             if (step >= dist || dist < 0.5f)
             {
-                // Aligned
                 owner->SetLocalPosition(m_AlignmentTarget);
                 m_CurrentDirection = m_DesiredDirection;
                 m_State = MoveState::Moving;
@@ -88,7 +84,6 @@ namespace dae
 
         case MoveState::Moving:
         {
-            // Check if direction changed and needs alignment
             if (glm::length(m_DesiredDirection) > 0.1f && NeedsAlignment(m_DesiredDirection))
             {
                 StartAlignment(m_DesiredDirection);
@@ -96,14 +91,12 @@ namespace dae
                 return;
             }
 
-            // Check if player stopped (no input)
             if (glm::length(m_DesiredDirection) < 0.1f)
             {
                 m_State = MoveState::Idle;
                 return;
             }
 
-            // Update direction if still same axis
             if (glm::length(m_DesiredDirection) > 0.1f)
             {
                 m_CurrentDirection = m_DesiredDirection;
@@ -119,11 +112,9 @@ namespace dae
     {
         if (glm::length(m_CurrentDirection) < 0.1f)
         {
-            // First movement - no alignment needed
             return false;
         }
 
-        // Check if changing from horizontal to vertical or vice versa
         const bool currentIsHorizontal = std::abs(m_CurrentDirection.x) > std::abs(m_CurrentDirection.y);
         const bool newIsHorizontal = std::abs(newDirection.x) > std::abs(newDirection.y);
 
@@ -143,16 +134,13 @@ namespace dae
         const float relX = currentWorldPos.x - gridOrigin.x;
         const float relY = currentWorldPos.y - gridOrigin.y;
 
-        // Determine which axis to align to
         const bool newIsHorizontal = std::abs(newDirection.x) > std::abs(newDirection.y);
 
         if (newIsHorizontal)
         {
-            // Need to align to horizontal center line (middle of vertical range)
             int subCol{}, subRow{};
             grid->WorldToSubCell(relX, relY, subCol, subRow);
             
-            // Find the row's horizontal center line (subRow % 3 == 1)
             const int row = subRow / 3;
             const int centerSubRow = row * 3 + 1;
             
@@ -162,11 +150,9 @@ namespace dae
         }
         else
         {
-            // Need to align to vertical center line (middle of horizontal range)
             int subCol{}, subRow{};
             grid->WorldToSubCell(relX, relY, subCol, subRow);
             
-            // Find the column's vertical center line (subCol % 3 == 1)
             const int col = subCol / 3;
             const int centerSubCol = col * 3 + 1;
             
@@ -192,14 +178,10 @@ namespace dae
         const int centerSubCol = static_cast<int>(std::floor(relX / grid->GetSubCellWidth()));
         const int centerSubRow = static_cast<int>(std::floor(relY / grid->GetSubCellHeight()));
 
-        // Dig the stable 3x3
         for (int dr = -1; dr <= 1; ++dr)
             for (int dc = -1; dc <= 1; ++dc)
                 grid->DigSubCell(centerSubCol + dc, centerSubRow + dr);
 
-        // Open the wall between two big-cells only when the player is the one
-        // crossing — and only while their 3x3 actually straddles that boundary.
-        // OpenSide uses |= so calling it every frame while straddling is safe.
         const int centerCol = centerSubCol / 3;
         const int centerRow = centerSubRow / 3;
 
@@ -208,7 +190,7 @@ namespace dae
         {
             const int leadingSubCol = centerSubCol + (m_CurrentDirection.x > 0.f ? 1 : -1);
             const int leadingCol = leadingSubCol / 3;
-            if (leadingCol != centerCol)   // 3x3 straddles the vertical boundary
+            if (leadingCol != centerCol)
             {
                 if (m_CurrentDirection.x > 0.f)
                 {
@@ -226,7 +208,7 @@ namespace dae
         {
             const int leadingSubRow = centerSubRow + (m_CurrentDirection.y > 0.f ? 1 : -1);
             const int leadingRow = leadingSubRow / 3;
-            if (leadingRow != centerRow)   // 3x3 straddles the horizontal boundary
+            if (leadingRow != centerRow)
             {
                 if (m_CurrentDirection.y > 0.f)
                 {
@@ -270,7 +252,7 @@ namespace dae
         }
 
         owner->SetLocalPosition(newPos);
-        DigAtCurrentPosition();   // walls now open automatically inside DigSubCell
+        DigAtCurrentPosition();
     }
 
     float PlayerMovementComponent::CalculateSpeed() const
@@ -291,7 +273,6 @@ namespace dae
         const float halfW = 1.5f * grid->GetSubCellWidth();
         const float halfH = 1.5f * grid->GetSubCellHeight();
 
-        // Digging speed if ANY overlapping subcell is not yet dug, walking speed otherwise
         return grid->IsBoxTouchingUndugSubCell(relX - halfW, relY - halfH, relX + halfW, relY + halfH)
             ? m_DiggingSpeed : m_WalkingSpeed;
     }

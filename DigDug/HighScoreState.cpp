@@ -19,7 +19,6 @@
 
 namespace dae
 {
-    // ── layout ───────────────────────────────────────────────────────────────
     static constexpr float kHeadlineX = 205.f;  static constexpr float kHeadlineY = 220.f;
     static constexpr float kScoreX    = 225.f;  static constexpr float kScoreY    = 300.f;
     static constexpr float kHintX     = 100.f;  static constexpr float kHintY     = 355.f;
@@ -30,7 +29,6 @@ namespace dae
     static constexpr float kLetter2X  = 300.f;
     static constexpr float kReadyX    = 440.f;  static constexpr float kReadyY = 400.f;
 
-    // ─────────────────────────────────────────────────────────────────────────
     HighScoreState::HighScoreState(int finalScore, bool playerWon, bool showEntry)
         : m_FinalScore(finalScore)
         , m_PlayerWon(playerWon)
@@ -49,7 +47,6 @@ namespace dae
         auto smallFont  = res.LoadFont("Lingua.otf", 28);
         auto hintFont   = res.LoadFont("Lingua.otf", 16);
 
-        // ── Headline ─────────────────────────────────────────────────────────
         {
             auto obj = std::make_unique<GameObject>();
             obj->SetLocalPosition(kHeadlineX, kHeadlineY);
@@ -61,7 +58,6 @@ namespace dae
             scene.Add(std::move(obj));
         }
 
-        // ── Score ─────────────────────────────────────────────────────────────
         {
             auto obj = std::make_unique<GameObject>();
             obj->SetLocalPosition(kScoreX, kScoreY);
@@ -75,7 +71,6 @@ namespace dae
 
         if (m_ShowEntry)
         {
-            // ── Hint (name entry) ─────────────────────────────────────────────
             {
                 auto obj = std::make_unique<GameObject>();
                 obj->SetLocalPosition(kHintX, kHintY);
@@ -86,7 +81,6 @@ namespace dae
                 scene.Add(std::move(obj));
             }
 
-            // ── Letter slots ──────────────────────────────────────────────────
             auto letterFont = res.LoadFont("Lingua.otf", 36);
             auto readyFont  = res.LoadFont("Lingua.otf", 24);
             TextComponent* pLetterText[3]{};
@@ -113,7 +107,6 @@ namespace dae
                 scene.Add(std::move(obj));
             }
 
-            // ── READY ─────────────────────────────────────────────────────────
             TextComponent* pReadyText{};
             {
                 auto obj = std::make_unique<GameObject>();
@@ -123,7 +116,6 @@ namespace dae
                 scene.Add(std::move(obj));
             }
 
-            // ── Navigation component ──────────────────────────────────────────
             {
                 auto obj = std::make_unique<GameObject>();
                 m_pEntryNav = obj->AddComponent<HighScoreNameEntryComponent>();
@@ -135,7 +127,6 @@ namespace dae
                 scene.Add(std::move(obj));
             }
 
-            // ── Input bindings (name entry) ───────────────────────────────────
             input.BindKeyboard(SDL_SCANCODE_LEFT,  KeyState::Pressed,
                 std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, -1));
             input.BindKeyboard(SDL_SCANCODE_RIGHT, KeyState::Pressed,
@@ -163,7 +154,6 @@ namespace dae
         }
         else
         {
-            // ── Hint (score only) ─────────────────────────────────────────────
             {
                 auto obj = std::make_unique<GameObject>();
                 obj->SetLocalPosition(kHintX, kHintY);
@@ -174,7 +164,6 @@ namespace dae
                 scene.Add(std::move(obj));
             }
 
-            // ── Input bindings (dismiss only) ─────────────────────────────────
             input.BindKeyboard(SDL_SCANCODE_RETURN, KeyState::Pressed,
                 std::make_unique<EnterCommand>(manager));
             input.BindController(0, Controller::ControllerButton::Start,   KeyState::Pressed,
@@ -206,7 +195,6 @@ namespace dae
 
         if (m_ShowEntry)
         {
-            // Single-player: save initials then show leaderboard
             if (!m_AlreadySaved && m_pEntryNav)
             {
                 m_AlreadySaved = true;
@@ -218,7 +206,6 @@ namespace dae
             return std::make_unique<ShowHighScoreState>();
         }
 
-        // Other modes: show leaderboard read-only (no entry was saved)
         return std::make_unique<ShowHighScoreState>();
     }
 }

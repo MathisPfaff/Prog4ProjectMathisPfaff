@@ -17,13 +17,12 @@ namespace dae
         std::unique_ptr<GameState> Update(GameManagerComponent* manager) override;
 
     private:
-        // Raw ptrs into the scene – NOT owned here, marked for destroy on OnExit
         GameObject*              m_pTitleObject{};
         GameObject*              m_pSinglePlayerObject{};
         GameObject*              m_pVersusObject{};
         GameObject*              m_pTwoPlayerObject{};
         GameObject*              m_pHintObject{};
-        GameObject*              m_pMenuNavObject{};  // owns MenuNavigationComponent
+        GameObject*              m_pMenuNavObject{};
         MenuNavigationComponent* m_pMenuNav{};
     };
 }

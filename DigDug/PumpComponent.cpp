@@ -23,7 +23,6 @@ namespace dae
         m_pHitbox = owner->AddComponent<HitboxComponent>(0.f, 0.f, HitboxType::Pump);
     }
 
-    // ── Generic stuck-enemy helpers ─────────────────────────────────────────
 
     bool PumpComponent::HasStuckEnemy() const
     {
@@ -47,10 +46,9 @@ namespace dae
     {
         m_pStuckEnemy        = nullptr;
         m_pStuckEnemy_Fygar  = nullptr;
-        m_pumpingSoundActive = false;   // reset so the next Stuck session can play again
+        m_pumpingSoundActive = false; 
     }
 
-    // ── Public interface ────────────────────────────────────────────────────
 
     void PumpComponent::Fire()
     {
@@ -66,7 +64,6 @@ namespace dae
                 m_FiringDirection = glm::normalize(dir);
         }
 
-        // Play the shot sound when the pump beam fires
         ServiceLocator::GetSoundSystem().PlaySound(DigDugSounds::Shot, 1.f);
 
         m_CurrentLength = 0.f;
@@ -92,7 +89,6 @@ namespace dae
         {
             m_PumpHeldThisFrame = true;
 
-            // Play the pumping sound once per Stuck session (first held frame)
             if (!m_pumpingSoundActive)
             {
                 m_pumpingSoundActive = true;
@@ -112,7 +108,6 @@ namespace dae
         m_State = PumpState::Idle;
     }
 
-    // ── Per-frame update ────────────────────────────────────────────────────
 
     void PumpComponent::Update()
     {
@@ -156,7 +151,6 @@ namespace dae
         m_CurrentLength = newLength;
         UpdateHitbox();
 
-        // ── Enemy hit / reconnect scan ──────────────────────────────────────
         for (auto* hb : HitboxComponent::GetAllHitboxes())
         {
             if (!hb || hb == m_pHitbox)            continue;
@@ -182,7 +176,6 @@ namespace dae
                 return;
             }
         }
-        // ───────────────────────────────────────────────────────────────────
 
         if (m_CurrentLength >= maxLength)
             m_State = PumpState::Retracting;
@@ -219,7 +212,6 @@ namespace dae
         }
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
 
     bool PumpComponent::IsSubCellBlocked(float relX, float relY) const
     {

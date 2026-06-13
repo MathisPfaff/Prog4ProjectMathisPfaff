@@ -6,7 +6,6 @@ namespace dae
     class HighScoreNameEntryComponent;
     class GameManagerComponent;
 
-    // Signals the manager to start (go to main menu) only when READY is selected.
     class HighScoreConfirmCommand final : public Command
     {
     public:

@@ -17,7 +17,6 @@ namespace dae
         void OnEnter(GameObject* owner) override;
         std::unique_ptr<PookaState> Update(GameObject* owner) override;
 
-        // Returns the direction the enemy last moved in (integer steps as float)
         glm::vec2 GetLastDirection() const { return glm::vec2{ static_cast<float>(m_DirX),
                                                                static_cast<float>(m_DirY) }; }
 

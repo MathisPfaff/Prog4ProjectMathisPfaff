@@ -17,7 +17,6 @@ namespace dae
 
     int ScoreComponent::CalculateKillScore(EnemyType type, int enemyRow, bool fygarSameRowAsPlayer)
     {
-        // Pooka base points per underground level
         static constexpr int pookaPoints[5] = { 0, 200, 300, 400, 500 };
 
         const int level = GetUndergroundLevel(enemyRow);
@@ -25,9 +24,9 @@ namespace dae
 
         if (type == EnemyType::Fygar)
         {
-            score *= 2;                    // Fygar always gives double Pooka points
+            score *= 2;                   
             if (fygarSameRowAsPlayer)
-                score *= 2;               // fire-breath threat: double again (4× Pooka total)
+                score *= 2;          
         }
 
         return score;

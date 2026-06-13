@@ -5,7 +5,6 @@ namespace dae
 {
     class HighScoreNameEntryComponent;
 
-    // Cycles the letter on the currently selected letter slot (D-Pad Up / Down)
     class HighScoreLetterCommand final : public Command
     {
     public:

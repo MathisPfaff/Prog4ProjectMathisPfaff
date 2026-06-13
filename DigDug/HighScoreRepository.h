@@ -7,11 +7,10 @@ namespace dae
 {
     struct HighScoreEntry
     {
-        std::string name{};   // 3-letter initials
+        std::string name{};
         int         score{};
     };
 
-    // Simple flat-text store: one "NAME SCORE" per line, sorted descending.
     class HighScoreRepository final
     {
     public:

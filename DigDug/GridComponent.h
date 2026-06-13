@@ -5,16 +5,9 @@
 
 namespace dae
 {
-    // ── Fixed grid dimensions (14 cols × 16 rows) ─────────────────────────────
-    // Layout (row 0 = top = ground level, rows 1-15 = underground):
-    //   Row  0        : Ground level  – always open, never dug
-    //   Rows 1 – 4    : Underground level 1 – Yellow
-    //   Rows 5 – 8    : Underground level 2 – Orange
-    //   Rows 9 – 12   : Underground level 3 – Dark Orange
-    //   Rows 13 – 15  : Underground level 4 – Dark Red
     static constexpr int kFixedCols = 14;
     static constexpr int kFixedRows = 16;
-    static constexpr int kGroundRow =  0;   // the one row that is always open sky
+    static constexpr int kGroundRow =  0;
 
     enum class TunnelSide : uint8_t
     {
@@ -39,7 +32,6 @@ namespace dae
     class GridComponent final : public BaseComponent
     {
     public:
-        // cols and rows MUST equal kFixedCols / kFixedRows
         GridComponent(GameObject* owner,
                       float totalWidth, float totalHeight,
                       int cols, int rows);
@@ -62,9 +54,7 @@ namespace dae
         int   GetSubCols()       const { return m_Cols * 3; }
         int   GetSubRows()       const { return m_Rows * 3; }
 
-        // Returns true when the big-cell row is the above-ground row
         bool IsGroundRow(int row) const { return row == kGroundRow; }
-        // Returns true when the sub-cell row belongs to the ground row
         bool IsGroundSubRow(int subRow) const
         {
             return subRow >= kGroundRow * 3 && subRow < (kGroundRow + 1) * 3;
