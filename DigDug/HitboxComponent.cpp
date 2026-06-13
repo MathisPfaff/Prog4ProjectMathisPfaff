@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include "Renderer.h"
 #include "HealthComponent.h"
+#include "GameTime.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
 
@@ -18,7 +19,6 @@ namespace dae
         s_AllHitboxes.push_back(this);
     }
 
-    // Remove from the global list so no other hitbox can ever dereference us
     HitboxComponent::~HitboxComponent()
     {
         auto it = std::find(s_AllHitboxes.begin(), s_AllHitboxes.end(), this);
@@ -29,6 +29,14 @@ namespace dae
     void HitboxComponent::Update()
     {
         if (!m_Enabled) return;
+
+        // Tick the per-hitbox cooldown
+        if (m_DamageCooldownTimer > 0.f)
+        {
+            m_DamageCooldownTimer -= GameTime::GetInstance().GetDeltaTime();
+            return; // still cooling down – don't deal damage this frame
+        }
+
         if (!m_CanDamage) return;
 
         auto* owner = GetOwner();
@@ -40,34 +48,39 @@ namespace dae
             if (!other->GetOwner()) continue;
             if (!other->IsEnabled()) continue;
 
-            // ── Enemy body vs Player ────────────────────────────────────────
-            if ((m_Type == HitboxType::Player && other->m_Type == HitboxType::Enemy) ||
-                (m_Type == HitboxType::Enemy  && other->m_Type == HitboxType::Player))
+            // ── Enemy body hits Player ──────────────────────────────────────
+            // Only the ENEMY side triggers damage so the pair is only processed once.
+            if (m_Type == HitboxType::Enemy && other->m_Type == HitboxType::Player)
             {
-                const HitboxComponent* enemyHb = (m_Type == HitboxType::Enemy) ? this : other;
-                if (!enemyHb->m_CanDamage) continue;
+                if (!m_CanDamage) continue;
 
                 if (Intersects(other))
                 {
-                    auto* playerOwner = (m_Type == HitboxType::Player) ? owner : other->GetOwner();
+                    auto* playerOwner = other->GetOwner();
                     if (auto* health = playerOwner->GetComponent<HealthComponent>())
+                    {
                         health->TakeDamage(1);
+                        // Start cooldown on this enemy hitbox so it can't hit again
+                        // until the player has had time to respawn
+                        m_DamageCooldownTimer = k_DamageCooldown;
+                    }
                 }
             }
 
-            // ── Fire breath vs Player ───────────────────────────────────────
-            if ((m_Type == HitboxType::Fire   && other->m_Type == HitboxType::Player) ||
-                (m_Type == HitboxType::Player  && other->m_Type == HitboxType::Fire))
+            // ── Fire breath hits Player ─────────────────────────────────────
+            // Only the FIRE side triggers damage.
+            if (m_Type == HitboxType::Fire && other->m_Type == HitboxType::Player)
             {
-                // Fire hitbox owns the CanDamage flag; player side is always true
-                const HitboxComponent* fireHb = (m_Type == HitboxType::Fire) ? this : other;
-                if (!fireHb->m_CanDamage) continue;
+                if (!m_CanDamage) continue;
 
                 if (Intersects(other))
                 {
-                    auto* playerOwner = (m_Type == HitboxType::Player) ? owner : other->GetOwner();
+                    auto* playerOwner = other->GetOwner();
                     if (auto* health = playerOwner->GetComponent<HealthComponent>())
+                    {
                         health->TakeDamage(1);
+                        m_DamageCooldownTimer = k_DamageCooldown;
+                    }
                 }
             }
         }
@@ -87,12 +100,13 @@ namespace dae
 
         SDL_Color color;
         if (m_Type == HitboxType::Fire)
-            color = { 255, 80, 0, 180 };   // orange-red = fire
+            color = { 255, 80, 0, 180 };
         else if (!m_CanDamage)
-            color = { 255, 165, 0, 128 };  // orange = inflating/deflating
+            color = { 255, 165, 0, 128 };
         else
-            color = (m_Type == HitboxType::Player) ? SDL_Color{ 0, 255, 0, 128 }
-                                                    : SDL_Color{ 255, 0, 0, 128 };
+            color = (m_Type == HitboxType::Player)
+                ? SDL_Color{ 0, 255, 0, 128 }
+                : SDL_Color{ 255, 0, 0, 128 };
 
         SDL_Renderer* sdlRenderer = Renderer::GetInstance().GetSDLRenderer();
         SDL_SetRenderDrawColor(sdlRenderer, color.r, color.g, color.b, color.a);
@@ -107,10 +121,10 @@ namespace dae
         const glm::vec2 thisCenter  = GetCenter();
         const glm::vec2 otherCenter = other->GetCenter();
 
-        const float thisLeft   = thisCenter.x  - m_Width         * 0.5f;
-        const float thisRight  = thisCenter.x  + m_Width         * 0.5f;
-        const float thisTop    = thisCenter.y  - m_Height        * 0.5f;
-        const float thisBottom = thisCenter.y  + m_Height        * 0.5f;
+        const float thisLeft   = thisCenter.x - m_Width         * 0.5f;
+        const float thisRight  = thisCenter.x + m_Width         * 0.5f;
+        const float thisTop    = thisCenter.y - m_Height        * 0.5f;
+        const float thisBottom = thisCenter.y + m_Height        * 0.5f;
 
         const float otherLeft   = otherCenter.x - other->m_Width  * 0.5f;
         const float otherRight  = otherCenter.x + other->m_Width  * 0.5f;

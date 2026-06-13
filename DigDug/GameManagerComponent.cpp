@@ -30,8 +30,7 @@ namespace dae
 
     GameManagerComponent::~GameManagerComponent()
     {
-        if (m_pCurrentState)
-            m_pCurrentState->OnExit(this);
+        m_pCurrentState.reset();
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -229,8 +228,13 @@ namespace dae
 
     void GameManagerComponent::ClearGameWorld()
     {
-        // Destroy observers first – they unregister from HealthComponent/ScoreComponent
-        // in their destructors, so no dangling observer callbacks after this point
+        // Unregister observers from their subjects NOW, while HealthComponent and
+        // ScoreComponent are still alive (player is only marked for destroy here,
+        // actual destruction happens on the next LateUpdate).
+        if (m_pLivesObserver) m_pLivesObserver->ClearReferences();
+        if (m_pScoreObserver) m_pScoreObserver->ClearReferences();
+
+        // Now destroy the observers – their destructors are empty so no double-unregister.
         m_pLivesObserver.reset();
         m_pScoreObserver.reset();
 

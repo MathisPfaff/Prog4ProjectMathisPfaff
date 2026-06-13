@@ -15,8 +15,9 @@ namespace dae
 
     ScoreDisplayObserver::~ScoreDisplayObserver()
     {
-        if (m_ScoreComp)
-            m_ScoreComp->RemoveObserver(this);
+        // Same reasoning as LivesDisplayObserver: do not call RemoveObserver here.
+        // ClearGameWorld() calls ClearReferences() explicitly while ScoreComponent
+        // is still alive. At shutdown, ScoreComponent is already destroyed first.
     }
 
     void ScoreDisplayObserver::OnNotify(BaseComponent*, unsigned int eventID)

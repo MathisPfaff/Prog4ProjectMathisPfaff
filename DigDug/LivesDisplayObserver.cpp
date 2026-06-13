@@ -16,8 +16,12 @@ namespace dae
 
     LivesDisplayObserver::~LivesDisplayObserver()
     {
-        if (m_HealthComp)
-            m_HealthComp->RemoveObserver(this);
+        // Do NOT call RemoveObserver here.
+        // During normal gameplay cleanup, ClearGameWorld() calls ClearReferences()
+        // explicitly while the subject is still alive.
+        // At shutdown, the player (and its HealthComponent/Subject) is already
+        // destroyed before this destructor runs (scene destroys objects forward),
+        // so touching m_HealthComp here would be a use-after-free.
     }
 
     void LivesDisplayObserver::OnNotify(BaseComponent*, unsigned int eventID)
