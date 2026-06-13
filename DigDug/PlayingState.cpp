@@ -48,7 +48,10 @@ namespace dae
     std::unique_ptr<GameState> PlayingState::Update(GameManagerComponent* manager)
     {
         if (manager->IsGameOver())
-            return std::make_unique<HighScoreState>(manager->GetFinalScore());
+            return std::make_unique<HighScoreState>(manager->GetFinalScore(), false);
+
+        if (manager->IsPlayerWon())
+            return std::make_unique<HighScoreState>(manager->GetFinalScore(), true);
 
         return nullptr;
     }

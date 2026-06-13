@@ -18,6 +18,7 @@
 #include "SceneManager.h"
 #include "GameTime.h"
 #include "Hash.h"
+#include <algorithm>
 
 namespace dae
 {
@@ -68,16 +69,33 @@ namespace dae
 
     void GameManagerComponent::LateUpdate()
     {
-        // Enemies that were pumped to death this frame
+        // Nullify pointers to enemies destroyed this frame
         for (auto& spawn : m_EnemySpawns)
         {
             if (spawn.gameObject && spawn.gameObject->IsMarkedForDestroy())
                 spawn.gameObject = nullptr;
         }
 
-        // Player (should not normally happen mid-game, but guard anyway)
+        // Player guard
         if (m_PlayerSpawn.gameObject && m_PlayerSpawn.gameObject->IsMarkedForDestroy())
             m_PlayerSpawn.gameObject = nullptr;
+
+        // Win condition: all enemies are dead and the player is still alive
+        if (!m_PlayerWon && !m_GameOver && !m_EnemySpawns.empty())
+        {
+            const bool allDead = std::all_of(m_EnemySpawns.begin(), m_EnemySpawns.end(),
+                [](const SpawnInfo& s) { return s.gameObject == nullptr; });
+
+            if (allDead)
+            {
+                // Snapshot score while the player object is still alive
+                if (m_PlayerSpawn.gameObject)
+                    if (auto* sc = m_PlayerSpawn.gameObject->GetComponent<ScoreComponent>())
+                        m_FinalScore = sc->GetScore();
+
+                m_PlayerWon = true;
+            }
+        }
     }
 
     // ── Observer ──────────────────────────────────────────────────────────────

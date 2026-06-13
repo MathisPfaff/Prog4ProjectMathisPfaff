@@ -6,7 +6,7 @@ namespace dae
     class HighScoreState final : public GameState
     {
     public:
-        explicit HighScoreState(int finalScore);
+        explicit HighScoreState(int finalScore, bool playerWon);
         ~HighScoreState() override = default;
 
         void OnEnter(GameManagerComponent* manager) override;
@@ -14,6 +14,7 @@ namespace dae
         std::unique_ptr<GameState> Update(GameManagerComponent* manager) override;
 
     private:
-        int m_FinalScore{};
+        int  m_FinalScore{};
+        bool m_PlayerWon{};
     };
 }

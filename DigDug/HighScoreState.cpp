@@ -9,45 +9,46 @@
 
 namespace dae
 {
-    // Window is 675 x 622 (kSidebarWidth + kGridWidth + kRightPadding, kGridOffsetY + kGridHeight + kBottomPadding)
-    // These positions place the text visually centred on that canvas.
-    static constexpr float kGameOverX = 205.f;
-    static constexpr float kGameOverY = 255.f;
-    static constexpr float kScoreX = 225.f;
-    static constexpr float kScoreY = 320.f;
+    static constexpr float kHeadlineX = 205.f;
+    static constexpr float kHeadlineY = 255.f;
+    static constexpr float kScoreX    = 225.f;
+    static constexpr float kScoreY    = 320.f;
 
-    HighScoreState::HighScoreState(int finalScore)
+    HighScoreState::HighScoreState(int finalScore, bool playerWon)
         : m_FinalScore(finalScore)
+        , m_PlayerWon(playerWon)
     {}
 
     void HighScoreState::OnEnter(GameManagerComponent* manager)
     {
-        // Remove every game-world object (grid, player, enemies, HUD)
         manager->ClearGameWorld();
 
         auto& scene = SceneManager::GetInstance().GetActiveScene();
-        auto& res = ResourceManager::GetInstance();
+        auto& res   = ResourceManager::GetInstance();
 
         auto largeFont = res.LoadFont("Lingua.otf", 40);
         auto smallFont = res.LoadFont("Lingua.otf", 28);
 
-        // "GAME OVER" headline
-        auto gameOverObj = std::make_unique<GameObject>();
-        gameOverObj->SetLocalPosition(kGameOverX, kGameOverY);
-        gameOverObj->AddComponent<TextComponent>("GAME OVER", largeFont, SDL_Color{ 255, 50, 50, 255 });
-        scene.Add(std::move(gameOverObj));
+        // Headline: "YOU WIN!" in gold, "GAME OVER" in red
+        auto headlineObj = std::make_unique<GameObject>();
+        headlineObj->SetLocalPosition(kHeadlineX, kHeadlineY);
+        if (m_PlayerWon)
+            headlineObj->AddComponent<TextComponent>("YOU WIN!", largeFont, SDL_Color{ 255, 215, 0, 255 });
+        else
+            headlineObj->AddComponent<TextComponent>("GAME OVER", largeFont, SDL_Color{ 255, 50, 50, 255 });
+        scene.Add(std::move(headlineObj));
 
-        // Final score line
+        // Score line
         auto scoreObj = std::make_unique<GameObject>();
         scoreObj->SetLocalPosition(kScoreX, kScoreY);
-        const std::string scoreText = "Score: " + std::to_string(m_FinalScore);
-        scoreObj->AddComponent<TextComponent>(scoreText, smallFont, SDL_Color{ 255, 215, 0, 255 });
+        scoreObj->AddComponent<TextComponent>(
+            "Score: " + std::to_string(m_FinalScore), smallFont, SDL_Color{ 255, 255, 255, 255 });
         scene.Add(std::move(scoreObj));
     }
 
     void HighScoreState::OnExit(GameManagerComponent*)
     {
-        // Terminal state for now – nothing to clean up
+        // Terminal state – nothing to clean up
     }
 
     std::unique_ptr<GameState> HighScoreState::Update(GameManagerComponent*)

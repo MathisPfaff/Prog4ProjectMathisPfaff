@@ -26,14 +26,14 @@ namespace dae
         GameManagerComponent(GameObject* owner, GameObject* pGridObject);
         ~GameManagerComponent() override;
 
-        GameManagerComponent(const GameManagerComponent&)            = delete;
-        GameManagerComponent(GameManagerComponent&&)                 = delete;
+        GameManagerComponent(const GameManagerComponent&) = delete;
+        GameManagerComponent(GameManagerComponent&&) = delete;
         GameManagerComponent& operator=(const GameManagerComponent&) = delete;
-        GameManagerComponent& operator=(GameManagerComponent&&)      = delete;
+        GameManagerComponent& operator=(GameManagerComponent&&) = delete;
 
         void FixedUpdate(float) override {}
         void Update()           override;
-        void LateUpdate()       override; // nullifies dead entity pointers before scene frees them
+        void LateUpdate()       override;
         void Render()     const override {}
 
         void OnNotify(BaseComponent* entity, unsigned int eventID) override;
@@ -41,14 +41,15 @@ namespace dae
 
         // Called by game states
         void SpawnPlayer(int col, int row);
-        void SpawnPooka (int col, int row);
-        void SpawnFygar (int col, int row);
+        void SpawnPooka(int col, int row);
+        void SpawnFygar(int col, int row);
         void ClearGameWorld();
 
         // Accessors
         GameObject* GetGridObject() const { return m_pGridObject; }
         GameObject* GetPlayer()     const { return m_PlayerSpawn.gameObject; }
         bool        IsGameOver()    const { return m_GameOver; }
+        bool        IsPlayerWon()   const { return m_PlayerWon; }
         int         GetFinalScore() const { return m_FinalScore; }
 
     private:
@@ -73,8 +74,9 @@ namespace dae
         std::unique_ptr<ScoreDisplayObserver> m_pScoreObserver{};
 
         bool  m_NeedsRespawn{ false };
-        bool  m_GameOver    { false };
-        int   m_FinalScore  { 0 };
+        bool  m_GameOver{ false };
+        bool  m_PlayerWon{ false };
+        int   m_FinalScore{ 0 };
 
         static constexpr float k_InvincibilityDuration{ 1.5f };
         float m_InvincibilityTimer{ 0.f };
