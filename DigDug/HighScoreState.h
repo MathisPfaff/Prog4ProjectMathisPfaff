@@ -4,6 +4,7 @@
 namespace dae
 {
     class GameObject;
+    class HighScoreNameEntryComponent;
 
     class HighScoreState final : public GameState
     {
@@ -19,9 +20,19 @@ namespace dae
         int  m_FinalScore{};
         bool m_PlayerWon{};
 
-        // Raw ptrs into the scene – NOT owned here, marked for destroy on OnExit
+        // Headline / score / hint
         GameObject* m_pHeadlineObject{};
         GameObject* m_pScoreObject{};
         GameObject* m_pHintObject{};
+
+        // Name-entry row  (3 letter slots + READY)
+        GameObject* m_pLetter0Object{};
+        GameObject* m_pLetter1Object{};
+        GameObject* m_pLetter2Object{};
+        GameObject* m_pReadyObject{};
+
+        // Navigation logic object
+        GameObject*                  m_pEntryNavObject{};
+        HighScoreNameEntryComponent* m_pEntryNav{};
     };
 }

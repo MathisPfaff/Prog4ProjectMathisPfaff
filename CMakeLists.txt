@@ -247,6 +247,10 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/GameManagerComponent.cpp
   DigDug/PlayingState.cpp
   DigDug/HighScoreState.cpp
+  DigDug/HighScoreNameEntryComponent.cpp
+  DigDug/HighScoreHSlotCommand.cpp
+  DigDug/HighScoreLetterCommand.cpp
+  DigDug/HighScoreConfirmCommand.cpp
   DigDug/EnterCommand.cpp
   DigDug/MainMenuState.cpp
   DigDug/MenuButtonComponent.cpp
