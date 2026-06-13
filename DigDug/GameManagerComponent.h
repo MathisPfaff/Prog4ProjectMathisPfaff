@@ -23,13 +23,13 @@ namespace dae
     class GameManagerComponent final : public BaseComponent, public Observer
     {
     public:
-        GameManagerComponent(GameObject* owner, GameObject* pGridObject);
+        explicit GameManagerComponent(GameObject* owner);
         ~GameManagerComponent() override;
 
-        GameManagerComponent(const GameManagerComponent&) = delete;
-        GameManagerComponent(GameManagerComponent&&) = delete;
+        GameManagerComponent(const GameManagerComponent&)            = delete;
+        GameManagerComponent(GameManagerComponent&&)                 = delete;
         GameManagerComponent& operator=(const GameManagerComponent&) = delete;
-        GameManagerComponent& operator=(GameManagerComponent&&) = delete;
+        GameManagerComponent& operator=(GameManagerComponent&&)      = delete;
 
         void FixedUpdate(float) override {}
         void Update()           override;
@@ -40,10 +40,16 @@ namespace dae
         void ChangeState(std::unique_ptr<GameState> newState);
 
         // Called by game states
+        void SpawnGrid();
         void SpawnPlayer(int col, int row);
-        void SpawnPooka(int col, int row);
-        void SpawnFygar(int col, int row);
+        void SpawnPooka (int col, int row);
+        void SpawnFygar (int col, int row);
         void ClearGameWorld();
+
+        // Start-request – set by EnterCommand, polled by menu/end states
+        void RequestStart()      { m_StartRequested = true; }
+        bool IsStartRequested()  const { return m_StartRequested; }
+        void ResetStartRequest() { m_StartRequested = false; }
 
         // Accessors
         GameObject* GetGridObject() const { return m_pGridObject; }
@@ -69,14 +75,14 @@ namespace dae
         GameObject* m_pLivesDisplayObject{};
         GameObject* m_pScoreDisplayObject{};
 
-        // Observers are owned by the manager – their lifetime is fully controlled here
         std::unique_ptr<LivesDisplayObserver> m_pLivesObserver{};
         std::unique_ptr<ScoreDisplayObserver> m_pScoreObserver{};
 
-        bool  m_NeedsRespawn{ false };
-        bool  m_GameOver{ false };
-        bool  m_PlayerWon{ false };
-        int   m_FinalScore{ 0 };
+        bool  m_NeedsRespawn  { false };
+        bool  m_GameOver      { false };
+        bool  m_PlayerWon     { false };
+        bool  m_StartRequested{ false };
+        int   m_FinalScore    { 0 };
 
         static constexpr float k_InvincibilityDuration{ 1.5f };
         float m_InvincibilityTimer{ 0.f };

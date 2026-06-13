@@ -1,5 +1,6 @@
 #include "GameManagerComponent.h"
 #include "GameState.h"
+#include "MainMenuState.h"
 #include "PlayingState.h"
 #include "Scene.h"
 #include "GameObject.h"
@@ -22,16 +23,99 @@
 
 namespace dae
 {
-    GameManagerComponent::GameManagerComponent(GameObject* owner, GameObject* pGridObject)
-        : BaseComponent(owner)
-        , m_pGridObject(pGridObject)
+    // Grid layout constants (must match Main.cpp window sizing)
+    static constexpr float kSidebarWidth = 155.f;
+    static constexpr float kGridOffsetY  =  30.f;
+    static constexpr int   kGridCols     =  14;
+    static constexpr int   kGridRows     =  16;
+    static constexpr float kCellSize     =  36.f;
+    static constexpr float kGridWidth    = kGridCols * kCellSize;
+    static constexpr float kGridHeight   = kGridRows * kCellSize;
+
+    static void DigShapeA(GridComponent* grid)
     {
-        ChangeState(std::make_unique<PlayingState>());
+        grid->PreDigCell(1, 1, TunnelSide::Right | TunnelSide::Down);
+        grid->PreDigCell(2, 1, TunnelSide::Left  | TunnelSide::Right);
+        grid->PreDigCell(3, 1, TunnelSide::Left  | TunnelSide::Right);
+        grid->PreDigCell(4, 1, TunnelSide::Left);
+        grid->PreDigCell(1, 2, TunnelSide::Up | TunnelSide::Down);
+        grid->PreDigCell(1, 3, TunnelSide::Up | TunnelSide::Down);
+        grid->PreDigCell(1, 4, TunnelSide::Up);
+    }
+
+    static void DigShapeB(GridComponent* grid)
+    {
+        grid->PreDigCell(6,  5, TunnelSide::Right);
+        grid->PreDigCell(7,  5, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(8,  5, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(9,  5, TunnelSide::Left | TunnelSide::Right | TunnelSide::Down);
+        grid->PreDigCell(10, 5, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(11, 5, TunnelSide::Left);
+        grid->PreDigCell(9,  6, TunnelSide::Up | TunnelSide::Down);
+        grid->PreDigCell(9,  7, TunnelSide::Up);
+    }
+
+    static void DigShapeC(GridComponent* grid)
+    {
+        constexpr int colStart = 8, colEnd = 12;
+        constexpr int rowStart = 9, rowEnd = 12;
+        for (int col = colStart; col <= colEnd; ++col)
+        {
+            TunnelSide top = TunnelSide::None;
+            if (col > colStart) top |= TunnelSide::Left;
+            if (col < colEnd)   top |= TunnelSide::Right;
+            if (col == colStart || col == colEnd) top |= TunnelSide::Down;
+            grid->PreDigCell(col, rowStart, top);
+
+            TunnelSide bot = TunnelSide::None;
+            if (col > colStart) bot |= TunnelSide::Left;
+            if (col < colEnd)   bot |= TunnelSide::Right;
+            if (col == colStart || col == colEnd) bot |= TunnelSide::Up;
+            grid->PreDigCell(col, rowEnd, bot);
+        }
+        for (int row = rowStart + 1; row < rowEnd; ++row)
+        {
+            grid->PreDigCell(colStart, row, TunnelSide::Up | TunnelSide::Down);
+            grid->PreDigCell(colEnd,   row, TunnelSide::Up | TunnelSide::Down);
+        }
+    }
+
+    GameManagerComponent::GameManagerComponent(GameObject* owner)
+        : BaseComponent(owner)
+    {
+        ChangeState(std::make_unique<MainMenuState>());
     }
 
     GameManagerComponent::~GameManagerComponent()
     {
         m_pCurrentState.reset();
+    }
+
+    // ── SpawnGrid ─────────────────────────────────────────────────────────────
+
+    void GameManagerComponent::SpawnGrid()
+    {
+        // Reset game-state flags for a fresh round
+        m_GameOver       = false;
+        m_PlayerWon      = false;
+        m_NeedsRespawn   = false;
+        m_IsInvincible   = false;
+        m_InvincibilityTimer = 0.f;
+        m_FinalScore     = 0;
+
+        auto& scene = SceneManager::GetInstance().GetActiveScene();
+
+        auto gridObj = std::make_unique<GameObject>();
+        gridObj->SetLocalPosition(kSidebarWidth, kGridOffsetY);
+        gridObj->AddComponent<GridComponent>(kGridWidth, kGridHeight, kGridCols, kGridRows);
+
+        auto* grid = gridObj->GetComponent<GridComponent>();
+        DigShapeA(grid);
+        DigShapeB(grid);
+        DigShapeC(grid);
+
+        m_pGridObject = gridObj.get();
+        scene.Add(std::move(gridObj));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────

@@ -13,6 +13,8 @@ namespace dae
 {
     void PlayingState::OnEnter(GameManagerComponent* manager)
     {
+        manager->SpawnGrid();          // creates grid + resets all game-state flags
+
         manager->SpawnPlayer(1, 1);
         manager->SpawnPooka (3, 1);
         manager->SpawnPooka (9, 9);

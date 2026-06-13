@@ -247,6 +247,8 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/GameManagerComponent.cpp
   DigDug/PlayingState.cpp
   DigDug/HighScoreState.cpp
+  DigDug/EnterCommand.cpp
+  DigDug/MainMenuState.cpp
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

@@ -5,23 +5,22 @@ namespace dae
 {
     class GameObject;
 
-    class HighScoreState final : public GameState
+    class MainMenuState final : public GameState
     {
     public:
-        explicit HighScoreState(int finalScore, bool playerWon);
-        ~HighScoreState() override = default;
+        MainMenuState() = default;
+        ~MainMenuState() override = default;
 
         void OnEnter(GameManagerComponent* manager) override;
-        void OnExit (GameManagerComponent* manager) override;
+        void OnExit(GameManagerComponent* manager) override;
         std::unique_ptr<GameState> Update(GameManagerComponent* manager) override;
 
     private:
-        int  m_FinalScore{};
-        bool m_PlayerWon{};
-
         // Raw ptrs into the scene – NOT owned here, marked for destroy on OnExit
-        GameObject* m_pHeadlineObject{};
-        GameObject* m_pScoreObject{};
+        GameObject* m_pTitleObject{};
+        GameObject* m_pSinglePlayerObject{};
+        GameObject* m_pVersusObject{};
+        GameObject* m_pTwoPlayerObject{};
         GameObject* m_pHintObject{};
     };
 }
