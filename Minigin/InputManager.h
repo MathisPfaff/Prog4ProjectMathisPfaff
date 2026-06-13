@@ -9,47 +9,56 @@
 
 namespace dae
 {
-	enum class KeyState
-	{
-		Pressed,
-		Released,
-		Held
-	};
+    enum class KeyState { Pressed, Released, Held };
 
-	class InputManager final : public Singleton<InputManager>
-	{
-	public:
-		bool ProcessInput();
+    class InputManager final : public Singleton<InputManager>
+    {
+    public:
+        bool ProcessInput();
 
-		void BindKeyboard(SDL_Scancode key, KeyState state, std::unique_ptr<Command> command);
-		void BindController(unsigned int controllerIndex, Controller::ControllerButton button,
-		                    KeyState state, std::unique_ptr<Command> command);
+        // ── Button / key bindings ─────────────────────────────────────────────
+        void BindKeyboard  (SDL_Scancode key, KeyState state, std::unique_ptr<Command> command);
+        void BindController(unsigned int controllerIndex, Controller::ControllerButton button,
+                            KeyState state, std::unique_ptr<Command> command);
 
-		void UnbindKeyboard(SDL_Scancode key, KeyState state);
-		void UnbindController(unsigned int controllerIndex, Controller::ControllerButton button,
-		                      KeyState state);
+        void UnbindKeyboard  (SDL_Scancode key, KeyState state);
+        void UnbindController(unsigned int controllerIndex, Controller::ControllerButton button,
+                              KeyState state);
 
-		void ClearBindings();
+        // ── Axis binding (left thumbstick) ────────────────────────────────────
+        // command->Execute() is called every frame; the command handles its own deadzone.
+        void BindControllerLeftStick(unsigned int controllerIndex, std::unique_ptr<Command> command);
 
-	private:
-		enum class BindingType { Keyboard, Controller };
+        // Clears ALL bindings (button + axis)
+        void ClearBindings();
 
-		struct InputBinding
-		{
-			std::unique_ptr<Command> command;
-			BindingType type{};
-			KeyState state{};
-			SDL_Scancode key{};
-			int controllerIndex{};
-			Controller::ControllerButton button{};
-		};
+        // Returns (or creates) the controller for the given index.
+        // Pointer is stable as long as no new controllers are added to the same slot.
+        Controller* GetOrCreateController(unsigned int index);
 
-		bool IsTriggered(const InputBinding& binding) const;
+    private:
+        enum class BindingType { Keyboard, Controller };
 
-		std::vector<InputBinding> m_Bindings;
-		std::vector<uint8_t> m_PreviousKeyboardState;
-		std::vector<std::unique_ptr<Controller>> m_Controllers;
+        struct InputBinding
+        {
+            std::unique_ptr<Command> command;
+            BindingType type{};
+            KeyState    state{};
+            SDL_Scancode key{};
+            int          controllerIndex{};
+            Controller::ControllerButton button{};
+        };
 
-		Controller* GetOrCreateController(unsigned int index);
-	};
+        struct AxisBinding
+        {
+            std::unique_ptr<Command> command;
+        };
+
+        bool IsTriggered(const InputBinding& binding) const;
+
+        std::vector<InputBinding>             m_Bindings;
+        std::vector<AxisBinding>              m_AxisBindings;
+        std::vector<uint8_t>                  m_PreviousKeyboardState;
+        std::vector<std::unique_ptr<Controller>> m_Controllers;
+    };
 }

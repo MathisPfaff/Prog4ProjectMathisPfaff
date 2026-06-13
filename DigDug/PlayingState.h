@@ -1,16 +1,25 @@
 #pragma once
 #include "GameState.h"
+#include "GameMode.h"
 
 namespace dae
 {
+	class GameObject;
+
     class PlayingState final : public GameState
     {
     public:
-        PlayingState() = default;
+        explicit PlayingState(GameMode mode = GameMode::SinglePlayer);
         ~PlayingState() override = default;
 
         void OnEnter(GameManagerComponent* manager) override;
         void OnExit (GameManagerComponent* manager) override;
         std::unique_ptr<GameState> Update(GameManagerComponent* manager) override;
+
+    private:
+        GameMode m_Mode;
+
+        void BindPlayer1Inputs(GameObject* player);
+        void BindPlayer2Inputs(GameObject* player);
     };
 }

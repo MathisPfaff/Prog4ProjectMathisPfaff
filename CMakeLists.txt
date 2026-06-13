@@ -252,6 +252,8 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/MenuButtonComponent.cpp
   DigDug/MenuNavigationComponent.cpp
   DigDug/NavigateMenuCommand.cpp
+  DigDug/GameMode.h
+  DigDug/JoystickMoveCommand.cpp
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

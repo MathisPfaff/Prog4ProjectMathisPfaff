@@ -127,9 +127,20 @@ namespace dae
 
     std::unique_ptr<GameState> MainMenuState::Update(GameManagerComponent* manager)
     {
-        if (manager->IsStartRequested())
-            return std::make_unique<PlayingState>();
+        if (!manager->IsStartRequested())
+            return nullptr;
 
-        return nullptr;
+        GameMode mode = GameMode::SinglePlayer;
+        if (m_pMenuNav)
+        {
+            switch (m_pMenuNav->GetSelectedIndex())
+            {
+            case 0: mode = GameMode::SinglePlayer; break;
+            case 1: mode = GameMode::Versus;       break;
+            case 2: mode = GameMode::TwoPlayer;    break;
+            default: break;
+            }
+        }
+        return std::make_unique<PlayingState>(mode);
     }
 }

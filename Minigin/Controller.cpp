@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include <glm/glm.hpp>
 
 // ── Platform-specific implementation ─────────────────────────────────────────
 
@@ -9,39 +10,55 @@
 
 namespace dae
 {
-	class Controller::ControllerImpl
-	{
-	public:
-		explicit ControllerImpl(unsigned int controllerIndex)
-			: m_ControllerIndex(controllerIndex)
-		{
-			ZeroMemory(&m_PreviousState, sizeof(XINPUT_STATE));
-			ZeroMemory(&m_CurrentState,  sizeof(XINPUT_STATE));
-		}
+    class Controller::ControllerImpl
+    {
+    public:
+        explicit ControllerImpl(unsigned int controllerIndex)
+            : m_ControllerIndex(controllerIndex)
+        {
+            ZeroMemory(&m_PreviousState, sizeof(XINPUT_STATE));
+            ZeroMemory(&m_CurrentState,  sizeof(XINPUT_STATE));
+        }
 
-		void Update()
-		{
-			m_PreviousState = m_CurrentState;
-			ZeroMemory(&m_CurrentState, sizeof(XINPUT_STATE));
-			XInputGetState(m_ControllerIndex, &m_CurrentState);
+        void Update()
+        {
+            m_PreviousState = m_CurrentState;
+            ZeroMemory(&m_CurrentState, sizeof(XINPUT_STATE));
+            XInputGetState(m_ControllerIndex, &m_CurrentState);
 
-			const WORD buttonChanges   = m_CurrentState.Gamepad.wButtons ^ m_PreviousState.Gamepad.wButtons;
-			m_ButtonsPressedThisFrame  = buttonChanges &  m_CurrentState.Gamepad.wButtons;
-			m_ButtonsReleasedThisFrame = buttonChanges & ~m_CurrentState.Gamepad.wButtons;
-		}
+            const WORD buttonChanges   = m_CurrentState.Gamepad.wButtons ^ m_PreviousState.Gamepad.wButtons;
+            m_ButtonsPressedThisFrame  = buttonChanges &  m_CurrentState.Gamepad.wButtons;
+            m_ButtonsReleasedThisFrame = buttonChanges & ~m_CurrentState.Gamepad.wButtons;
+        }
 
-		bool IsDown(unsigned int button) const     { return (m_CurrentState.Gamepad.wButtons  & button) != 0; }
-		bool IsUp(unsigned int button) const       { return (m_CurrentState.Gamepad.wButtons  & button) == 0; }
-		bool IsPressed(unsigned int button) const  { return (m_ButtonsPressedThisFrame        & button) != 0; }
-		bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame       & button) != 0; }
+        bool IsDown    (unsigned int button) const { return (m_CurrentState.Gamepad.wButtons  & button) != 0; }
+        bool IsUp      (unsigned int button) const { return (m_CurrentState.Gamepad.wButtons  & button) == 0; }
+        bool IsPressed (unsigned int button) const { return (m_ButtonsPressedThisFrame        & button) != 0; }
+        bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame       & button) != 0; }
 
-	private:
-		unsigned int m_ControllerIndex;
-		XINPUT_STATE m_PreviousState{};
-		XINPUT_STATE m_CurrentState{};
-		WORD m_ButtonsPressedThisFrame{};
-		WORD m_ButtonsReleasedThisFrame{};
-	};
+        glm::vec2 GetLeftStick() const
+        {
+            // XInput Y: positive = physical up → negate to match screen space (positive = down)
+            const float x =  static_cast<float>(m_CurrentState.Gamepad.sThumbLX) / 32767.f;
+            const float y = -static_cast<float>(m_CurrentState.Gamepad.sThumbLY) / 32767.f;
+
+            const glm::vec2 stick{ x, y };
+            const float mag = glm::length(stick);
+
+            // XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE = 7849
+            constexpr float kDeadzone = 7849.f / 32767.f;
+            if (mag < kDeadzone) return { 0.f, 0.f };
+
+            return glm::normalize(stick);   // unit vector, direction only
+        }
+
+    private:
+        unsigned int m_ControllerIndex;
+        XINPUT_STATE m_PreviousState{};
+        XINPUT_STATE m_CurrentState{};
+        WORD m_ButtonsPressedThisFrame{};
+        WORD m_ButtonsReleasedThisFrame{};
+    };
 }
 
 #elif defined(__EMSCRIPTEN__)
@@ -49,96 +66,107 @@ namespace dae
 
 namespace dae
 {
-	class Controller::ControllerImpl
-	{
-	public:
-		explicit ControllerImpl(unsigned int controllerIndex)
-			: m_ControllerIndex(controllerIndex)
-		{
-		}
+    class Controller::ControllerImpl
+    {
+    public:
+        explicit ControllerImpl(unsigned int controllerIndex)
+            : m_ControllerIndex(controllerIndex) {}
 
-		~ControllerImpl()
-		{
-			if (m_pGamepad)
-				SDL_CloseGamepad(m_pGamepad);
-		}
+        ~ControllerImpl()
+        {
+            if (m_pGamepad)
+                SDL_CloseGamepad(m_pGamepad);
+        }
 
-		void Update()
-		{
-			m_ButtonsPressedThisFrame  = 0;
-			m_ButtonsReleasedThisFrame = 0;
+        void Update()
+        {
+            m_ButtonsPressedThisFrame  = 0;
+            m_ButtonsReleasedThisFrame = 0;
 
-			int count = 0;
-			SDL_JoystickID* pIDs = SDL_GetGamepads(&count);
+            int count = 0;
+            SDL_JoystickID* pIDs = SDL_GetGamepads(&count);
 
-			if (!pIDs || static_cast<int>(m_ControllerIndex) >= count)
-			{
-				SDL_free(pIDs);
-				if (m_pGamepad) { SDL_CloseGamepad(m_pGamepad); m_pGamepad = nullptr; }
-				m_PreviousButtons = 0;
-				m_CurrentButtons  = 0;
-				return;
-			}
+            if (!pIDs || static_cast<int>(m_ControllerIndex) >= count)
+            {
+                SDL_free(pIDs);
+                if (m_pGamepad) { SDL_CloseGamepad(m_pGamepad); m_pGamepad = nullptr; }
+                m_PreviousButtons = 0;
+                m_CurrentButtons  = 0;
+                return;
+            }
 
-			const SDL_JoystickID id = pIDs[m_ControllerIndex];
-			SDL_free(pIDs);
+            const SDL_JoystickID id = pIDs[m_ControllerIndex];
+            SDL_free(pIDs);
 
-			if (!m_pGamepad || SDL_GetGamepadID(m_pGamepad) != id)
-			{
-				if (m_pGamepad) SDL_CloseGamepad(m_pGamepad);
-				m_pGamepad = SDL_OpenGamepad(id);
-			}
+            if (!m_pGamepad || SDL_GetGamepadID(m_pGamepad) != id)
+            {
+                if (m_pGamepad) SDL_CloseGamepad(m_pGamepad);
+                m_pGamepad = SDL_OpenGamepad(id);
+            }
 
-			if (!m_pGamepad)
-				return;
+            if (!m_pGamepad) return;
 
-			m_PreviousButtons = m_CurrentButtons;
-			m_CurrentButtons  = 0;
+            m_PreviousButtons = m_CurrentButtons;
+            m_CurrentButtons  = 0;
 
-			for (const auto& mapping : k_ButtonMap)
-			{
-				if (SDL_GetGamepadButton(m_pGamepad, mapping.sdlButton))
-					m_CurrentButtons |= mapping.mask;
-			}
+            for (const auto& mapping : k_ButtonMap)
+                if (SDL_GetGamepadButton(m_pGamepad, mapping.sdlButton))
+                    m_CurrentButtons |= mapping.mask;
 
-			const unsigned int changes = m_CurrentButtons ^ m_PreviousButtons;
-			m_ButtonsPressedThisFrame  = changes &  m_CurrentButtons;
-			m_ButtonsReleasedThisFrame = changes & ~m_CurrentButtons;
-		}
+            const unsigned int changes = m_CurrentButtons ^ m_PreviousButtons;
+            m_ButtonsPressedThisFrame  = changes &  m_CurrentButtons;
+            m_ButtonsReleasedThisFrame = changes & ~m_CurrentButtons;
+        }
 
-		bool IsDown(unsigned int button) const     { return (m_CurrentButtons          & button) != 0; }
-		bool IsUp(unsigned int button) const       { return (m_CurrentButtons          & button) == 0; }
-		bool IsPressed(unsigned int button) const  { return (m_ButtonsPressedThisFrame & button) != 0; }
-		bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame & button) != 0; }
+        bool IsDown    (unsigned int button) const { return (m_CurrentButtons           & button) != 0; }
+        bool IsUp      (unsigned int button) const { return (m_CurrentButtons           & button) == 0; }
+        bool IsPressed (unsigned int button) const { return (m_ButtonsPressedThisFrame  & button) != 0; }
+        bool IsReleased(unsigned int button) const { return (m_ButtonsReleasedThisFrame & button) != 0; }
 
-	private:
-		struct ButtonMapping { SDL_GamepadButton sdlButton; unsigned int mask; };
+        glm::vec2 GetLeftStick() const
+        {
+            if (!m_pGamepad) return { 0.f, 0.f };
 
-		static constexpr ButtonMapping k_ButtonMap[] =
-		{
-			{ SDL_GAMEPAD_BUTTON_SOUTH,          0x1000 }, // ButtonA
-			{ SDL_GAMEPAD_BUTTON_EAST,           0x2000 }, // ButtonB
-			{ SDL_GAMEPAD_BUTTON_WEST,           0x4000 }, // ButtonX
-			{ SDL_GAMEPAD_BUTTON_NORTH,          0x8000 }, // ButtonY
-			{ SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,  0x0100 }, // LeftShoulder
-			{ SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, 0x0200 }, // RightShoulder
-			{ SDL_GAMEPAD_BUTTON_BACK,           0x0020 }, // Back
-			{ SDL_GAMEPAD_BUTTON_START,          0x0010 }, // Start
-			{ SDL_GAMEPAD_BUTTON_LEFT_STICK,     0x0040 }, // LeftThumb
-			{ SDL_GAMEPAD_BUTTON_RIGHT_STICK,    0x0080 }, // RightThumb
-			{ SDL_GAMEPAD_BUTTON_DPAD_UP,        0x0001 }, // DPadUp
-			{ SDL_GAMEPAD_BUTTON_DPAD_DOWN,      0x0002 }, // DPadDown
-			{ SDL_GAMEPAD_BUTTON_DPAD_LEFT,      0x0004 }, // DPadLeft
-			{ SDL_GAMEPAD_BUTTON_DPAD_RIGHT,     0x0008 }, // DPadRight
-		};
+            // SDL3 LEFTY: negative = physical up = screen up → no negation needed
+            const float x = static_cast<float>(SDL_GetGamepadAxis(m_pGamepad, SDL_GAMEPAD_AXIS_LEFTX)) / 32767.f;
+            const float y = static_cast<float>(SDL_GetGamepadAxis(m_pGamepad, SDL_GAMEPAD_AXIS_LEFTY)) / 32767.f;
 
-		unsigned int m_ControllerIndex;
-		SDL_Gamepad* m_pGamepad{ nullptr };
-		unsigned int m_PreviousButtons{};
-		unsigned int m_CurrentButtons{};
-		unsigned int m_ButtonsPressedThisFrame{};
-		unsigned int m_ButtonsReleasedThisFrame{};
-	};
+            const glm::vec2 stick{ x, y };
+            const float mag = glm::length(stick);
+
+            constexpr float kDeadzone = 0.25f;
+            if (mag < kDeadzone) return { 0.f, 0.f };
+
+            return glm::normalize(stick);
+        }
+
+    private:
+        struct ButtonMapping { SDL_GamepadButton sdlButton; unsigned int mask; };
+        static constexpr ButtonMapping k_ButtonMap[] =
+        {
+            { SDL_GAMEPAD_BUTTON_SOUTH,          0x1000 },
+            { SDL_GAMEPAD_BUTTON_EAST,           0x2000 },
+            { SDL_GAMEPAD_BUTTON_WEST,           0x4000 },
+            { SDL_GAMEPAD_BUTTON_NORTH,          0x8000 },
+            { SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,  0x0100 },
+            { SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, 0x0200 },
+            { SDL_GAMEPAD_BUTTON_BACK,           0x0020 },
+            { SDL_GAMEPAD_BUTTON_START,          0x0010 },
+            { SDL_GAMEPAD_BUTTON_LEFT_STICK,     0x0040 },
+            { SDL_GAMEPAD_BUTTON_RIGHT_STICK,    0x0080 },
+            { SDL_GAMEPAD_BUTTON_DPAD_UP,        0x0001 },
+            { SDL_GAMEPAD_BUTTON_DPAD_DOWN,      0x0002 },
+            { SDL_GAMEPAD_BUTTON_DPAD_LEFT,      0x0004 },
+            { SDL_GAMEPAD_BUTTON_DPAD_RIGHT,     0x0008 },
+        };
+
+        unsigned int m_ControllerIndex;
+        SDL_Gamepad* m_pGamepad{ nullptr };
+        unsigned int m_PreviousButtons{};
+        unsigned int m_CurrentButtons{};
+        unsigned int m_ButtonsPressedThisFrame{};
+        unsigned int m_ButtonsReleasedThisFrame{};
+    };
 }
 
 #endif
@@ -147,17 +175,17 @@ namespace dae
 
 namespace dae
 {
-	Controller::Controller(unsigned int controllerIndex)
-		: m_ControllerIndex(controllerIndex)
-		, m_pImpl(std::make_unique<ControllerImpl>(controllerIndex))
-	{
-	}
+    Controller::Controller(unsigned int controllerIndex)
+        : m_ControllerIndex(controllerIndex)
+        , m_pImpl(std::make_unique<ControllerImpl>(controllerIndex))
+    {}
 
-	Controller::~Controller() = default;
+    Controller::~Controller() = default;
 
-	void Controller::Update()                                  { m_pImpl->Update(); }
-	bool Controller::IsDown(ControllerButton button) const     { return m_pImpl->IsDown(static_cast<unsigned int>(button)); }
-	bool Controller::IsUp(ControllerButton button) const       { return m_pImpl->IsUp(static_cast<unsigned int>(button)); }
-	bool Controller::IsPressed(ControllerButton button) const  { return m_pImpl->IsPressed(static_cast<unsigned int>(button)); }
-	bool Controller::IsReleased(ControllerButton button) const { return m_pImpl->IsReleased(static_cast<unsigned int>(button)); }
+    void Controller::Update()                                      { m_pImpl->Update(); }
+    bool Controller::IsDown    (ControllerButton button) const     { return m_pImpl->IsDown    (static_cast<unsigned int>(button)); }
+    bool Controller::IsUp      (ControllerButton button) const     { return m_pImpl->IsUp      (static_cast<unsigned int>(button)); }
+    bool Controller::IsPressed (ControllerButton button) const     { return m_pImpl->IsPressed (static_cast<unsigned int>(button)); }
+    bool Controller::IsReleased(ControllerButton button) const     { return m_pImpl->IsReleased(static_cast<unsigned int>(button)); }
+    glm::vec2 Controller::GetLeftStick() const                     { return m_pImpl->GetLeftStick(); }
 }

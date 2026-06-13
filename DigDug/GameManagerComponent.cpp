@@ -153,18 +153,17 @@ namespace dae
 
     void GameManagerComponent::LateUpdate()
     {
-        // Nullify pointers to enemies destroyed this frame
         for (auto& spawn : m_EnemySpawns)
-        {
             if (spawn.gameObject && spawn.gameObject->IsMarkedForDestroy())
                 spawn.gameObject = nullptr;
-        }
 
-        // Player guard
-        if (m_PlayerSpawn.gameObject && m_PlayerSpawn.gameObject->IsMarkedForDestroy())
-            m_PlayerSpawn.gameObject = nullptr;
+        if (m_PlayerSpawn.gameObject  && m_PlayerSpawn.gameObject->IsMarkedForDestroy())
+            m_PlayerSpawn.gameObject  = nullptr;
 
-        // Win condition: all enemies are dead and the player is still alive
+        if (m_Player2Spawn.gameObject && m_Player2Spawn.gameObject->IsMarkedForDestroy())
+            m_Player2Spawn.gameObject = nullptr;
+
+        // Win condition: all enemies dead while player 1 is still alive
         if (!m_PlayerWon && !m_GameOver && !m_EnemySpawns.empty())
         {
             const bool allDead = std::all_of(m_EnemySpawns.begin(), m_EnemySpawns.end(),
@@ -172,7 +171,6 @@ namespace dae
 
             if (allDead)
             {
-                // Snapshot score while the player object is still alive
                 if (m_PlayerSpawn.gameObject)
                     if (auto* sc = m_PlayerSpawn.gameObject->GetComponent<ScoreComponent>())
                         m_FinalScore = sc->GetScore();
@@ -253,6 +251,36 @@ namespace dae
         SetupHUD();
     }
 
+    // ── SetupHUD ──────────────────────────────────────────────────────────────
+
+    void GameManagerComponent::SetupHUD()
+    {
+        auto* player = m_PlayerSpawn.gameObject;
+        if (!player) return;
+
+        auto* health = player->GetComponent<HealthComponent>();
+        auto* score = player->GetComponent<ScoreComponent>();
+
+        auto& scene = SceneManager::GetInstance().GetActiveScene();
+        auto  font = ResourceManager::GetInstance().LoadFont("Lingua.otf", 14);
+
+        auto livesObj = std::make_unique<GameObject>();
+        livesObj->SetLocalPosition(10.f, 50.f);
+        auto* livesText = livesObj->AddComponent<TextComponent>("Lives: 4", font, SDL_Color{ 255, 255, 255, 255 });
+        m_pLivesDisplayObject = livesObj.get();
+        scene.Add(std::move(livesObj));
+        m_pLivesObserver = std::make_unique<LivesDisplayObserver>(health, livesText);
+
+        auto scoreObj = std::make_unique<GameObject>();
+        scoreObj->SetLocalPosition(10.f, 90.f);
+        auto* scoreText = scoreObj->AddComponent<TextComponent>("Score: 0", font, SDL_Color{ 255, 255, 255, 255 });
+        m_pScoreDisplayObject = scoreObj.get();
+        scene.Add(std::move(scoreObj));
+        m_pScoreObserver = std::make_unique<ScoreDisplayObserver>(score, scoreText);
+    }
+
+    // ── SpawnPooka ────────────────────────────────────────────────────────────
+
     void GameManagerComponent::SpawnPooka(int col, int row)
     {
         auto* grid = m_pGridObject->GetComponent<GridComponent>();
@@ -273,6 +301,8 @@ namespace dae
         m_EnemySpawns.push_back({ col, row, spawnWorld, pooka.get() });
         scene.Add(std::move(pooka));
     }
+
+    // ── SpawnFygar ────────────────────────────────────────────────────────────
 
     void GameManagerComponent::SpawnFygar(int col, int row)
     {
@@ -296,64 +326,95 @@ namespace dae
         scene.Add(std::move(fygar));
     }
 
-    // ── HUD setup ─────────────────────────────────────────────────────────────
-
-    void GameManagerComponent::SetupHUD()
+    void GameManagerComponent::SpawnPlayer2(int col, int row)
     {
-        auto* player = m_PlayerSpawn.gameObject;
-        if (!player) return;
+        auto* grid = m_pGridObject->GetComponent<GridComponent>();
+        if (!grid) return;
 
-        auto* health = player->GetComponent<HealthComponent>();
-        auto* score  = player->GetComponent<ScoreComponent>();
+        auto& scene = SceneManager::GetInstance().GetActiveScene();
+
+        float wx{}, wy{};
+        grid->CellToWorld(col, row, wx, wy);
+        const glm::vec3 spawnWorld = m_pGridObject->GetWorldPosition() + glm::vec3(wx, wy, 0.f);
+
+        auto player2 = std::make_unique<GameObject>();
+        player2->SetLocalPosition(spawnWorld);
+        player2->AddComponent<TextureComponent>("Player2.png", 2.f);
+        player2->AddComponent<HealthComponent>(4);
+        player2->AddComponent<ScoreComponent>();
+        player2->AddComponent<HitboxComponent>(36.f, 36.f, HitboxType::Player);
+        player2->AddComponent<PlayerMovementComponent>(m_pGridObject);
+        player2->AddComponent<PumpComponent>(m_pGridObject);
+
+        m_Player2Spawn = { col, row, spawnWorld, player2.get() };
+
+        scene.Add(std::move(player2));
+
+        SetupHUD2();
+    }
+
+    // ── SetupHUD2 ─────────────────────────────────────────────────────────────
+
+    void GameManagerComponent::SetupHUD2()
+    {
+        auto* player2 = m_Player2Spawn.gameObject;
+        if (!player2) return;
+
+        auto* health = player2->GetComponent<HealthComponent>();
+        auto* score  = player2->GetComponent<ScoreComponent>();
 
         auto& scene = SceneManager::GetInstance().GetActiveScene();
         auto  font  = ResourceManager::GetInstance().LoadFont("Lingua.otf", 14);
 
-        // Lives display
-        auto livesObj  = std::make_unique<GameObject>();
-        livesObj->SetLocalPosition(10.f, 50.f);
-        auto* livesText = livesObj->AddComponent<TextComponent>("Lives: 4", font, SDL_Color{ 255, 255, 255, 255 });
-        m_pLivesDisplayObject = livesObj.get();
+        // P2 lives – lower in the sidebar
+        auto livesObj = std::make_unique<GameObject>();
+        livesObj->SetLocalPosition(10.f, 470.f);
+        auto* livesText = livesObj->AddComponent<TextComponent>("P2 Lives: 4", font, SDL_Color{ 100, 200, 255, 255 });
+        m_pLives2DisplayObject = livesObj.get();
         scene.Add(std::move(livesObj));
-        m_pLivesObserver = std::make_unique<LivesDisplayObserver>(health, livesText);
+        m_pLives2Observer = std::make_unique<LivesDisplayObserver>(health, livesText);
 
-        // Score display
-        auto scoreObj  = std::make_unique<GameObject>();
-        scoreObj->SetLocalPosition(10.f, 90.f);
-        auto* scoreText = scoreObj->AddComponent<TextComponent>("Score: 0", font, SDL_Color{ 255, 255, 255, 255 });
-        m_pScoreDisplayObject = scoreObj.get();
+        // P2 score
+        auto scoreObj = std::make_unique<GameObject>();
+        scoreObj->SetLocalPosition(10.f, 510.f);
+        auto* scoreText = scoreObj->AddComponent<TextComponent>("P2 Score: 0", font, SDL_Color{ 100, 200, 255, 255 });
+        m_pScore2DisplayObject = scoreObj.get();
         scene.Add(std::move(scoreObj));
-        m_pScoreObserver = std::make_unique<ScoreDisplayObserver>(score, scoreText);
+        m_pScore2Observer = std::make_unique<ScoreDisplayObserver>(score, scoreText);
     }
 
     // ── Clear game world ──────────────────────────────────────────────────────
 
     void GameManagerComponent::ClearGameWorld()
     {
-        // Unregister observers from their subjects NOW, while HealthComponent and
-        // ScoreComponent are still alive (player is only marked for destroy here,
-        // actual destruction happens on the next LateUpdate).
-        if (m_pLivesObserver) m_pLivesObserver->ClearReferences();
-        if (m_pScoreObserver) m_pScoreObserver->ClearReferences();
+        // Unregister observers while components are still alive
+        if (m_pLivesObserver)  m_pLivesObserver->ClearReferences();
+        if (m_pScoreObserver)  m_pScoreObserver->ClearReferences();
+        if (m_pLives2Observer) m_pLives2Observer->ClearReferences();
+        if (m_pScore2Observer) m_pScore2Observer->ClearReferences();
 
-        // Now destroy the observers – their destructors are empty so no double-unregister.
         m_pLivesObserver.reset();
         m_pScoreObserver.reset();
+        m_pLives2Observer.reset();
+        m_pScore2Observer.reset();
 
-        // Player
+        // Player 1
         if (m_PlayerSpawn.gameObject && !m_PlayerSpawn.gameObject->IsMarkedForDestroy())
             m_PlayerSpawn.gameObject->MarkForDestroy();
         m_PlayerSpawn.gameObject = nullptr;
 
+        // Player 2
+        if (m_Player2Spawn.gameObject && !m_Player2Spawn.gameObject->IsMarkedForDestroy())
+            m_Player2Spawn.gameObject->MarkForDestroy();
+        m_Player2Spawn.gameObject = nullptr;
+
         // Enemies
         for (auto& spawn : m_EnemySpawns)
-        {
             if (spawn.gameObject && !spawn.gameObject->IsMarkedForDestroy())
                 spawn.gameObject->MarkForDestroy();
-        }
         m_EnemySpawns.clear();
 
-        // HUD
+        // HUD P1
         if (m_pLivesDisplayObject && !m_pLivesDisplayObject->IsMarkedForDestroy())
             m_pLivesDisplayObject->MarkForDestroy();
         m_pLivesDisplayObject = nullptr;
@@ -361,6 +422,15 @@ namespace dae
         if (m_pScoreDisplayObject && !m_pScoreDisplayObject->IsMarkedForDestroy())
             m_pScoreDisplayObject->MarkForDestroy();
         m_pScoreDisplayObject = nullptr;
+
+        // HUD P2
+        if (m_pLives2DisplayObject && !m_pLives2DisplayObject->IsMarkedForDestroy())
+            m_pLives2DisplayObject->MarkForDestroy();
+        m_pLives2DisplayObject = nullptr;
+
+        if (m_pScore2DisplayObject && !m_pScore2DisplayObject->IsMarkedForDestroy())
+            m_pScore2DisplayObject->MarkForDestroy();
+        m_pScore2DisplayObject = nullptr;
 
         // Grid
         if (m_pGridObject && !m_pGridObject->IsMarkedForDestroy())

@@ -41,9 +41,10 @@ namespace dae
 
         // Called by game states
         void SpawnGrid();
-        void SpawnPlayer(int col, int row);
-        void SpawnPooka (int col, int row);
-        void SpawnFygar (int col, int row);
+        void SpawnPlayer (int col, int row);
+        void SpawnPlayer2(int col, int row);   // second human player
+        void SpawnPooka  (int col, int row);
+        void SpawnFygar  (int col, int row);
         void ClearGameWorld();
 
         // Start-request – set by EnterCommand, polled by menu/end states
@@ -54,12 +55,14 @@ namespace dae
         // Accessors
         GameObject* GetGridObject() const { return m_pGridObject; }
         GameObject* GetPlayer()     const { return m_PlayerSpawn.gameObject; }
+        GameObject* GetPlayer2()    const { return m_Player2Spawn.gameObject; }
         bool        IsGameOver()    const { return m_GameOver; }
         bool        IsPlayerWon()   const { return m_PlayerWon; }
         int         GetFinalScore() const { return m_FinalScore; }
 
     private:
         void SetupHUD();
+        void SetupHUD2();
         void RespawnEntities();
         void ResetToSpawn(SpawnInfo& spawn);
         void SetPlayerInvincible(bool invincible);
@@ -69,14 +72,20 @@ namespace dae
         std::unique_ptr<GameState> m_pCurrentState{};
 
         SpawnInfo              m_PlayerSpawn{};
+        SpawnInfo              m_Player2Spawn{};
         std::vector<SpawnInfo> m_EnemySpawns{};
 
-        // HUD display objects (raw ptrs into the scene, NOT owned here)
+        // HUD – player 1 (left sidebar, top)
         GameObject* m_pLivesDisplayObject{};
         GameObject* m_pScoreDisplayObject{};
-
         std::unique_ptr<LivesDisplayObserver> m_pLivesObserver{};
         std::unique_ptr<ScoreDisplayObserver> m_pScoreObserver{};
+
+        // HUD – player 2 (left sidebar, bottom)
+        GameObject* m_pLives2DisplayObject{};
+        GameObject* m_pScore2DisplayObject{};
+        std::unique_ptr<LivesDisplayObserver> m_pLives2Observer{};
+        std::unique_ptr<ScoreDisplayObserver> m_pScore2Observer{};
 
         bool  m_NeedsRespawn  { false };
         bool  m_GameOver      { false };
