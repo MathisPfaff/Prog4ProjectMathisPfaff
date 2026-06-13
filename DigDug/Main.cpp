@@ -13,6 +13,8 @@
 #include "FPSComponent.h"
 #include "GameObject.h"
 #include "GameManagerComponent.h"
+#include "ServiceLocator.h"
+#include "SoundIds.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -32,9 +34,20 @@ static constexpr int   kWindowHeight  = static_cast<int>(kGridOffsetY  + kGridHe
 
 static void load()
 {
+    // ── Load sounds ───────────────────────────────────────────────────────────
+    const std::string data = dae::ResourceManager::GetInstance().GetDataPath().string();
+    auto& ss = dae::ServiceLocator::GetSoundSystem();
+
+    ss.LoadSound(DigDugSounds::Shot,    data + "Dig Dug - Shot.mp3");
+    ss.LoadSound(DigDugSounds::Pumping, data + "Dig Dug - Pumping.mp3");
+    // Add your other sound files below when you have them:
+    // ss.LoadSound(DigDugSounds::Miss,       data + "Dig Dug - Miss.mp3");
+    // ss.LoadSound(DigDugSounds::HighScore,  data + "Dig Dug - HighScore.mp3");
+    // ss.LoadMusic(DigDugSounds::InGameMusic, data + "Dig Dug - InGameMusic.mp3");
+
+    // ── FPS counter ───────────────────────────────────────────────────────────
     auto& scene = dae::SceneManager::GetInstance().CreateScene();
 
-    // FPS counter – always visible
     auto fpsFont = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 20);
     auto fpsObj  = std::make_unique<dae::GameObject>();
     fpsObj->SetLocalPosition(8.f, 8.f);
@@ -42,7 +55,7 @@ static void load()
     fpsObj->AddComponent<dae::FPSComponent>();
     scene.Add(std::move(fpsObj));
 
-    // GameManager – grid and game objects are spawned by PlayingState
+    // ── GameManager ───────────────────────────────────────────────────────────
     auto managerObj = std::make_unique<dae::GameObject>();
     managerObj->AddComponent<dae::GameManagerComponent>();
     scene.Add(std::move(managerObj));

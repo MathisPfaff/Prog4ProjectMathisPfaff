@@ -23,6 +23,9 @@ namespace dae
         void LoadSound(SoundId id, const std::string& filePath) override;
         void LoadMusic(SoundId id, const std::string& filePath) override;
 
+        void SetMuted(bool mute) override;
+        bool IsMuted() const override;
+
     private:
         struct Impl;
         std::unique_ptr<Impl> m_pImpl;

@@ -17,5 +17,8 @@ namespace dae
 
         virtual void LoadSound(SoundId id, const std::string& filePath) = 0;
         virtual void LoadMusic(SoundId id, const std::string& filePath) = 0;
+
+        virtual void SetMuted(bool mute) = 0;
+        virtual bool IsMuted() const = 0;
     };
 }

@@ -8,6 +8,8 @@
 #include "ScoreComponent.h"
 #include "GameTime.h"
 #include "Renderer.h"
+#include "ServiceLocator.h"
+#include "SoundIds.h"
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 #include <cmath>
@@ -43,8 +45,9 @@ namespace dae
 
     void PumpComponent::ClearStuckEnemy()
     {
-        m_pStuckEnemy      = nullptr;
-        m_pStuckEnemy_Fygar = nullptr;
+        m_pStuckEnemy        = nullptr;
+        m_pStuckEnemy_Fygar  = nullptr;
+        m_pumpingSoundActive = false;   // reset so the next Stuck session can play again
     }
 
     // ── Public interface ────────────────────────────────────────────────────
@@ -63,6 +66,9 @@ namespace dae
                 m_FiringDirection = glm::normalize(dir);
         }
 
+        // Play the shot sound when the pump beam fires
+        ServiceLocator::GetSoundSystem().PlaySound(DigDugSounds::Shot, 1.f);
+
         m_CurrentLength = 0.f;
         m_State = PumpState::Extending;
     }
@@ -73,7 +79,7 @@ namespace dae
 
         if (StuckEnemyAddInflate(k_InflatePulse))
         {
-            TryAwardKillScore();   // award score while pointers are still valid
+            TryAwardKillScore();
             ClearStuckEnemy();
             m_CurrentLength = 0.f;
             m_State = PumpState::Idle;
@@ -83,7 +89,16 @@ namespace dae
     void PumpComponent::PumpHeld()
     {
         if (m_State == PumpState::Stuck)
+        {
             m_PumpHeldThisFrame = true;
+
+            // Play the pumping sound once per Stuck session (first held frame)
+            if (!m_pumpingSoundActive)
+            {
+                m_pumpingSoundActive = true;
+                ServiceLocator::GetSoundSystem().PlaySound(DigDugSounds::Pumping, 1.f);
+            }
+        }
     }
 
     void PumpComponent::ReleaseStuck()
@@ -196,7 +211,7 @@ namespace dae
         {
             if (StuckEnemyAddInflate(k_InflateHeldRate * dt))
             {
-                TryAwardKillScore();   // award score while pointers are still valid
+                TryAwardKillScore();
                 ClearStuckEnemy();
                 m_CurrentLength = 0.f;
                 m_State = PumpState::Idle;

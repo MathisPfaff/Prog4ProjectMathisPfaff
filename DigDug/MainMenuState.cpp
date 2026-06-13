@@ -10,6 +10,7 @@
 #include "InputManager.h"
 #include "EnterCommand.h"
 #include "NavigateMenuCommand.h"
+#include "MuteCommand.h"
 #include "Controller.h"
 #include <SDL3/SDL.h>
 
@@ -72,9 +73,9 @@ namespace dae
         // ── Navigation controller ─────────────────────────────────────────────
         auto navObj    = std::make_unique<GameObject>();
         m_pMenuNav     = navObj->AddComponent<MenuNavigationComponent>();
-        m_pMenuNav->AddButton(spBtn);   // index 0 – auto-selected (green)
-        m_pMenuNav->AddButton(vsBtn);   // index 1
-        m_pMenuNav->AddButton(tpBtn);   // index 2
+        m_pMenuNav->AddButton(spBtn);
+        m_pMenuNav->AddButton(vsBtn);
+        m_pMenuNav->AddButton(tpBtn);
         m_pMenuNavObject = navObj.get();
         scene.Add(std::move(navObj));
 
@@ -108,12 +109,13 @@ namespace dae
                              std::make_unique<NavigateMenuCommand>(m_pMenuNav, -1));
         input.BindController(0, Controller::ControllerButton::DPadRight, KeyState::Pressed,
                              std::make_unique<NavigateMenuCommand>(m_pMenuNav, +1));
+
+        // F2 – global mute toggle
+        input.BindKeyboard(SDL_SCANCODE_F2, KeyState::Pressed, std::make_unique<MuteCommand>());
     }
 
     void MainMenuState::OnExit(GameManagerComponent*)
     {
-        // Clear bindings FIRST – destroys NavigateMenuCommand/EnterCommand objects
-        // while the nav component is still alive (just marked for destroy)
         InputManager::GetInstance().ClearBindings();
 
         if (m_pTitleObject)        { m_pTitleObject->MarkForDestroy();        m_pTitleObject        = nullptr; }

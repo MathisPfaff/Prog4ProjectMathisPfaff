@@ -13,5 +13,11 @@ namespace dae
 
         void LoadSound(SoundId, const std::string&) override {}
         void LoadMusic(SoundId, const std::string&) override {}
+
+        void SetMuted(bool mute) override { m_muted = mute; }
+        bool IsMuted() const override { return m_muted; }
+
+    private:
+        bool m_muted{ false };
     };
 }

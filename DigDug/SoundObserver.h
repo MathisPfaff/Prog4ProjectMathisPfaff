@@ -4,13 +4,7 @@
 #include "HealthComponent.h"
 #include "ScoreComponent.h"
 #include "ISoundSystem.h"
-
-namespace DigDugSounds
-{
-    constexpr dae::SoundId InGameMusic = 0;
-    constexpr dae::SoundId HighScore   = 1;
-    constexpr dae::SoundId Miss        = 2;
-}
+#include "SoundIds.h"
 
 namespace dae
 {

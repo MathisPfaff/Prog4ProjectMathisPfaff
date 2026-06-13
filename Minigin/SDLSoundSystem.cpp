@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 #include <iostream>
 
 namespace dae
@@ -30,6 +31,8 @@ namespace dae
 		std::mutex					m_queueMutex{};
 		std::condition_variable		m_cv{};
 		std::thread					m_audioThread{};
+
+		std::atomic<bool>			m_muted{ false };
 
 		Impl()
 		{
@@ -81,10 +84,27 @@ namespace dae
 			m_sounds[id] = audio;
 		}
 
-		void PlaySound(SoundId id, float volume)       { Enqueue({ SoundRequestType::PlaySound, id, volume, false }); }
-		void PlayMusic(SoundId id, float volume, bool loop) { Enqueue({ SoundRequestType::PlayMusic, id, volume, loop }); }
-		void StopMusic()                               { Enqueue({ SoundRequestType::StopMusic }); }
-		void StopAll()                                 { Enqueue({ SoundRequestType::StopAll   }); }
+		void PlaySound(SoundId id, float volume)
+		{
+			if (!m_muted) Enqueue({ SoundRequestType::PlaySound, id, volume, false });
+		}
+
+		void PlayMusic(SoundId id, float volume, bool loop)
+		{
+			if (!m_muted) Enqueue({ SoundRequestType::PlayMusic, id, volume, loop });
+		}
+
+		void StopMusic() { Enqueue({ SoundRequestType::StopMusic }); }
+		void StopAll()   { Enqueue({ SoundRequestType::StopAll   }); }
+
+		void SetMuted(bool mute)
+		{
+			m_muted.store(mute);
+			if (mute)
+				Enqueue({ SoundRequestType::StopAll }); // silence everything in-flight
+		}
+
+		bool IsMuted() const { return m_muted.load(); }
 
 	private:
 		void Enqueue(SoundRequest request)
@@ -157,4 +177,6 @@ namespace dae
 	void SDLSoundSystem::PlayMusic(SoundId id, float volume, bool loop)     { m_pImpl->PlayMusic(id, volume, loop); }
 	void SDLSoundSystem::StopMusic()                                        { m_pImpl->StopMusic(); }
 	void SDLSoundSystem::StopAllSounds()                                    { m_pImpl->StopAll(); }
+	void SDLSoundSystem::SetMuted(bool mute)                                { m_pImpl->SetMuted(mute); }
+	bool SDLSoundSystem::IsMuted() const                                    { return m_pImpl->IsMuted(); }
 }

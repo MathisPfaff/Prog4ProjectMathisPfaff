@@ -5,6 +5,7 @@
 #include "MoveCommand.h"
 #include "PumpCommand.h"
 #include "PumpHeldCommand.h"
+#include "MuteCommand.h"
 #include "JoystickMoveCommand.h"
 #include "Controller.h"
 #include <glm/glm.hpp>
@@ -32,7 +33,6 @@ namespace dae
         case GameMode::SinglePlayer:
         case GameMode::Versus:
             manager->SpawnPlayer(1, 1);
-            // P1 gets keyboard + controller 0 (if connected)
             BindPlayer1Inputs(manager->GetPlayer(),
                               input.IsControllerConnected(0), 0);
             break;
@@ -47,24 +47,24 @@ namespace dae
 
             if (ctrl1)
             {
-                // Two pads connected: P1 = keyboard + ctrl0, P2 = ctrl1
                 BindPlayer1Inputs(manager->GetPlayer(),  /*includeController=*/true, 0);
                 BindPlayer2Inputs(manager->GetPlayer2(), 1);
             }
             else if (ctrl0)
             {
-                // One pad connected: P1 = keyboard only, P2 = ctrl0
                 BindPlayer1Inputs(manager->GetPlayer(),  /*includeController=*/false, 0);
                 BindPlayer2Inputs(manager->GetPlayer2(), 0);
             }
             else
             {
-                // No pads: both players on keyboard (P1=WASD, P2 has no controller)
                 BindPlayer1Inputs(manager->GetPlayer(),  /*includeController=*/false, 0);
             }
             break;
         }
         }
+
+        // F2 – global mute toggle (works regardless of game mode)
+        input.BindKeyboard(SDL_SCANCODE_F2, KeyState::Pressed, std::make_unique<MuteCommand>());
     }
 
     void PlayingState::BindPlayer1Inputs(GameObject* player, bool includeController, unsigned int controllerIndex)

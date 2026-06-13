@@ -37,13 +37,8 @@ namespace dae
 
         bool IsSubCellBlocked(float relX, float relY) const;
 
-        // Reads the currently stuck enemy, computes the correct Dig Dug score,
-        // and credits it to the ScoreComponent on the owner. Must be called
-        // BEFORE ClearStuckEnemy().
         void TryAwardKillScore();
 
-        // Generic helpers so UpdateStuck / ReleaseStuck / InflatePulse
-        // don't need to branch on which enemy type is stuck
         bool  HasStuckEnemy()           const;
         bool  StuckEnemyAddInflate(float amount);
         void  StuckEnemyStartDeflating();
@@ -51,13 +46,16 @@ namespace dae
 
         GameObject*      m_pGridObject{};
         HitboxComponent* m_pHitbox{};
-        PookaComponent*  m_pStuckEnemy     {};   // non-null only in Stuck state (Pooka)
-        FygarComponent*  m_pStuckEnemy_Fygar{};  // non-null only in Stuck state (Fygar)
+        PookaComponent*  m_pStuckEnemy     {};
+        FygarComponent*  m_pStuckEnemy_Fygar{};
 
         PumpState  m_State{ PumpState::Idle };
         glm::vec2  m_FiringDirection{ 1.f, 0.f };
         float      m_CurrentLength{ 0.f };
         bool       m_PumpHeldThisFrame{ false };
+
+        // Sound helpers
+        bool m_pumpingSoundActive{ false };  // true once the pumping sound has fired this Stuck session
 
         static constexpr float k_MaxCells      { 2.f   };
         static constexpr float k_ExtendSpeed   { 200.f };
