@@ -4,8 +4,9 @@
 
 namespace dae
 {
-    HighScoreConfirmCommand::HighScoreConfirmCommand(HighScoreNameEntryComponent* entry,
-        GameManagerComponent* manager)
+    HighScoreConfirmCommand::HighScoreConfirmCommand(
+        HighScoreNameEntryComponent* entry,
+        GameManagerComponent*        manager)
         : m_pEntry(entry)
         , m_pManager(manager)
     {}

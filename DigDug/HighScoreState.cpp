@@ -1,5 +1,5 @@
 #include "HighScoreState.h"
-#include "MainMenuState.h"
+#include "ShowHighScoreState.h"
 #include "GameManagerComponent.h"
 #include "SceneManager.h"
 #include "ResourceManager.h"
@@ -10,6 +10,7 @@
 #include "HighScoreHSlotCommand.h"
 #include "HighScoreLetterCommand.h"
 #include "HighScoreConfirmCommand.h"
+#include "HighScoreRepository.h"
 #include "Controller.h"
 #include <string>
 #include <SDL3/SDL.h>
@@ -21,7 +22,6 @@ namespace dae
     static constexpr float kScoreX    = 225.f;  static constexpr float kScoreY    = 300.f;
     static constexpr float kHintX     = 100.f;  static constexpr float kHintY     = 355.f;
 
-    // name-entry row: 3 letters evenly spaced, READY all the way right
     static constexpr float kLetterY   = 400.f;
     static constexpr float kLetter0X  = 180.f;
     static constexpr float kLetter1X  = 240.f;
@@ -123,7 +123,7 @@ namespace dae
             m_pEntryNav->SetLetterText(0, pLetterText[0]);
             m_pEntryNav->SetLetterText(1, pLetterText[1]);
             m_pEntryNav->SetLetterText(2, pLetterText[2]);
-            m_pEntryNav->SetReadyText(pReadyText);        // last call → full initial highlight
+            m_pEntryNav->SetReadyText(pReadyText);
             m_pEntryNavObject = obj.get();
             scene.Add(std::move(obj));
         }
@@ -151,7 +151,7 @@ namespace dae
         input.BindController(0, Controller::ControllerButton::DPadDown, KeyState::Pressed,
             std::make_unique<HighScoreLetterCommand>(m_pEntryNav, -1));
 
-        // Confirm → only transitions when READY slot is selected
+        // Confirm → sets IsStartRequested; Update() handles the save
         input.BindKeyboard(SDL_SCANCODE_RETURN, KeyState::Pressed,
             std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
         input.BindController(0, Controller::ControllerButton::Start,   KeyState::Pressed,
@@ -177,9 +177,18 @@ namespace dae
 
     std::unique_ptr<GameState> HighScoreState::Update(GameManagerComponent* manager)
     {
-        if (manager->IsStartRequested())
-            return std::make_unique<MainMenuState>();
+        if (!manager->IsStartRequested())
+            return nullptr;
 
-        return nullptr;
+        if (!m_AlreadySaved && m_pEntryNav)
+        {
+            m_AlreadySaved = true;
+            HighScoreRepository::Save(
+                ResourceManager::GetInstance().GetDataPath(),
+                m_pEntryNav->GetInitials(),
+                m_FinalScore);
+        }
+
+        return std::make_unique<ShowHighScoreState>();
     }
 }

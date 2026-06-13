@@ -19,6 +19,7 @@ namespace dae
     private:
         int  m_FinalScore{};
         bool m_PlayerWon{};
+        bool m_AlreadySaved{ false };
 
         // Headline / score / hint
         GameObject* m_pHeadlineObject{};

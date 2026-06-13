@@ -6,15 +6,16 @@ namespace dae
     class HighScoreNameEntryComponent;
     class GameManagerComponent;
 
-    // Only triggers a transition when the READY slot is currently selected
+    // Signals the manager to start (go to main menu) only when READY is selected.
     class HighScoreConfirmCommand final : public Command
     {
     public:
-        HighScoreConfirmCommand(HighScoreNameEntryComponent* entry, GameManagerComponent* manager);
+        HighScoreConfirmCommand(HighScoreNameEntryComponent* entry,
+                                GameManagerComponent*        manager);
         void Execute() override;
 
     private:
         HighScoreNameEntryComponent* m_pEntry{};
-        GameManagerComponent* m_pManager{};
+        GameManagerComponent*        m_pManager{};
     };
 }
