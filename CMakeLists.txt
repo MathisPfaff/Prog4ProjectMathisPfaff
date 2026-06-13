@@ -261,6 +261,8 @@ add_executable(${DIGDUG_TARGET} ${DIGDUG_PARAM}
   DigDug/MuteCommand.cpp
   DigDug/GameMode.h
   DigDug/JoystickMoveCommand.cpp
+  DigDug/LevelLoader.cpp
+  DigDug/LevelData.h
 )
 
 target_compile_features(${DIGDUG_TARGET} PUBLIC cxx_std_20)

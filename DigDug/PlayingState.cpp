@@ -1,5 +1,6 @@
 #include "PlayingState.h"
 #include "HighScoreState.h"
+#include "MainMenuState.h"
 #include "GameManagerComponent.h"
 #include "InputManager.h"
 #include "MoveCommand.h"
@@ -22,9 +23,12 @@ namespace dae
     void PlayingState::OnEnter(GameManagerComponent* manager)
     {
         manager->SpawnGrid();
-        manager->SpawnPooka(3, 1);
-        manager->SpawnPooka(9, 9);
-        manager->SpawnFygar(9, 5);
+
+        // Enemies – one per pre-dug tunnel, spread across all depth zones
+        manager->SpawnPooka(2,  2);   // yellow zone,      horizontal tunnel row 2
+        manager->SpawnPooka(10, 6);   // orange zone,      horizontal tunnel row 6
+        manager->SpawnPooka(2,  10);  // dark-orange zone, vertical tunnel col 2
+        manager->SpawnFygar(6,  13);  // dark-red zone,    horizontal tunnel row 13
 
         auto& input = InputManager::GetInstance();
 
@@ -32,15 +36,15 @@ namespace dae
         {
         case GameMode::SinglePlayer:
         case GameMode::Versus:
-            manager->SpawnPlayer(1, 1);
+            manager->SpawnPlayer(6, 7);   // centre of the player tunnel
             BindPlayer1Inputs(manager->GetPlayer(),
                               input.IsControllerConnected(0), 0);
             break;
 
         case GameMode::TwoPlayer:
         {
-            manager->SpawnPlayer (1,  1);
-            manager->SpawnPlayer2(12, 1);
+            manager->SpawnPlayer (6, 7);  // P1 – left half of the centre tunnel
+            manager->SpawnPlayer2(7, 7);  // P2 – right half of the centre tunnel
 
             const bool ctrl0 = input.IsControllerConnected(0);
             const bool ctrl1 = input.IsControllerConnected(1);
@@ -63,7 +67,6 @@ namespace dae
         }
         }
 
-        // F2 – global mute toggle (works regardless of game mode)
         input.BindKeyboard(SDL_SCANCODE_F2, KeyState::Pressed, std::make_unique<MuteCommand>());
     }
 

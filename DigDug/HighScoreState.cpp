@@ -1,5 +1,6 @@
 #include "HighScoreState.h"
 #include "ShowHighScoreState.h"
+#include "MainMenuState.h"
 #include "GameManagerComponent.h"
 #include "SceneManager.h"
 #include "ResourceManager.h"
@@ -10,6 +11,7 @@
 #include "HighScoreHSlotCommand.h"
 #include "HighScoreLetterCommand.h"
 #include "HighScoreConfirmCommand.h"
+#include "EnterCommand.h"
 #include "HighScoreRepository.h"
 #include "Controller.h"
 #include <string>
@@ -29,9 +31,10 @@ namespace dae
     static constexpr float kReadyX    = 440.f;  static constexpr float kReadyY = 400.f;
 
     // ─────────────────────────────────────────────────────────────────────────
-    HighScoreState::HighScoreState(int finalScore, bool playerWon)
+    HighScoreState::HighScoreState(int finalScore, bool playerWon, bool showEntry)
         : m_FinalScore(finalScore)
         , m_PlayerWon(playerWon)
+        , m_ShowEntry(showEntry)
     {}
 
     void HighScoreState::OnEnter(GameManagerComponent* manager)
@@ -44,8 +47,6 @@ namespace dae
 
         auto largeFont  = res.LoadFont("Lingua.otf", 40);
         auto smallFont  = res.LoadFont("Lingua.otf", 28);
-        auto letterFont = res.LoadFont("Lingua.otf", 36);
-        auto readyFont  = res.LoadFont("Lingua.otf", 24);
         auto hintFont   = res.LoadFont("Lingua.otf", 16);
 
         // ── Headline ─────────────────────────────────────────────────────────
@@ -70,94 +71,117 @@ namespace dae
             scene.Add(std::move(obj));
         }
 
-        // ── Hint ──────────────────────────────────────────────────────────────
-        {
-            auto obj = std::make_unique<GameObject>();
-            obj->SetLocalPosition(kHintX, kHintY);
-            obj->AddComponent<TextComponent>(
-                "Enter initials   Left/Right: select   Up/Down: change letter   A: confirm",
-                hintFont, SDL_Color{ 180, 180, 180, 255 });
-            m_pHintObject = obj.get();
-            scene.Add(std::move(obj));
-        }
-
-        // ── Letter slots ──────────────────────────────────────────────────────
-        TextComponent* pLetterText[3]{};
-
-        {
-            auto obj = std::make_unique<GameObject>();
-            obj->SetLocalPosition(kLetter0X, kLetterY);
-            pLetterText[0] = obj->AddComponent<TextComponent>("A", letterFont, SDL_Color{ 255, 255, 255, 255 });
-            m_pLetter0Object = obj.get();
-            scene.Add(std::move(obj));
-        }
-        {
-            auto obj = std::make_unique<GameObject>();
-            obj->SetLocalPosition(kLetter1X, kLetterY);
-            pLetterText[1] = obj->AddComponent<TextComponent>("A", letterFont, SDL_Color{ 255, 255, 255, 255 });
-            m_pLetter1Object = obj.get();
-            scene.Add(std::move(obj));
-        }
-        {
-            auto obj = std::make_unique<GameObject>();
-            obj->SetLocalPosition(kLetter2X, kLetterY);
-            pLetterText[2] = obj->AddComponent<TextComponent>("A", letterFont, SDL_Color{ 255, 255, 255, 255 });
-            m_pLetter2Object = obj.get();
-            scene.Add(std::move(obj));
-        }
-
-        // ── READY (far right) ─────────────────────────────────────────────────
-        TextComponent* pReadyText{};
-        {
-            auto obj = std::make_unique<GameObject>();
-            obj->SetLocalPosition(kReadyX, kReadyY);
-            pReadyText = obj->AddComponent<TextComponent>("READY", readyFont, SDL_Color{ 255, 255, 255, 255 });
-            m_pReadyObject = obj.get();
-            scene.Add(std::move(obj));
-        }
-
-        // ── Navigation component ──────────────────────────────────────────────
-        {
-            auto obj = std::make_unique<GameObject>();
-            m_pEntryNav = obj->AddComponent<HighScoreNameEntryComponent>();
-            m_pEntryNav->SetLetterText(0, pLetterText[0]);
-            m_pEntryNav->SetLetterText(1, pLetterText[1]);
-            m_pEntryNav->SetLetterText(2, pLetterText[2]);
-            m_pEntryNav->SetReadyText(pReadyText);
-            m_pEntryNavObject = obj.get();
-            scene.Add(std::move(obj));
-        }
-
-        // ── Input bindings ────────────────────────────────────────────────────
         auto& input = InputManager::GetInstance();
 
-        // Left/Right → move selected slot
-        input.BindKeyboard(SDL_SCANCODE_LEFT,  KeyState::Pressed,
-            std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, -1));
-        input.BindKeyboard(SDL_SCANCODE_RIGHT, KeyState::Pressed,
-            std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, +1));
-        input.BindController(0, Controller::ControllerButton::DPadLeft,  KeyState::Pressed,
-            std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, -1));
-        input.BindController(0, Controller::ControllerButton::DPadRight, KeyState::Pressed,
-            std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, +1));
+        if (m_ShowEntry)
+        {
+            // ── Hint (name entry) ─────────────────────────────────────────────
+            {
+                auto obj = std::make_unique<GameObject>();
+                obj->SetLocalPosition(kHintX, kHintY);
+                obj->AddComponent<TextComponent>(
+                    "Enter initials   Left/Right: select   Up/Down: change letter   A: confirm",
+                    hintFont, SDL_Color{ 180, 180, 180, 255 });
+                m_pHintObject = obj.get();
+                scene.Add(std::move(obj));
+            }
 
-        // Up/Down → cycle letter on current slot
-        input.BindKeyboard(SDL_SCANCODE_UP,   KeyState::Pressed,
-            std::make_unique<HighScoreLetterCommand>(m_pEntryNav, +1));
-        input.BindKeyboard(SDL_SCANCODE_DOWN, KeyState::Pressed,
-            std::make_unique<HighScoreLetterCommand>(m_pEntryNav, -1));
-        input.BindController(0, Controller::ControllerButton::DPadUp,   KeyState::Pressed,
-            std::make_unique<HighScoreLetterCommand>(m_pEntryNav, +1));
-        input.BindController(0, Controller::ControllerButton::DPadDown, KeyState::Pressed,
-            std::make_unique<HighScoreLetterCommand>(m_pEntryNav, -1));
+            // ── Letter slots ──────────────────────────────────────────────────
+            auto letterFont = res.LoadFont("Lingua.otf", 36);
+            auto readyFont  = res.LoadFont("Lingua.otf", 24);
+            TextComponent* pLetterText[3]{};
 
-        // Confirm → sets IsStartRequested; Update() handles the save
-        input.BindKeyboard(SDL_SCANCODE_RETURN, KeyState::Pressed,
-            std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
-        input.BindController(0, Controller::ControllerButton::Start,   KeyState::Pressed,
-            std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
-        input.BindController(0, Controller::ControllerButton::ButtonA, KeyState::Pressed,
-            std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
+            {
+                auto obj = std::make_unique<GameObject>();
+                obj->SetLocalPosition(kLetter0X, kLetterY);
+                pLetterText[0] = obj->AddComponent<TextComponent>("A", letterFont, SDL_Color{ 255, 255, 255, 255 });
+                m_pLetter0Object = obj.get();
+                scene.Add(std::move(obj));
+            }
+            {
+                auto obj = std::make_unique<GameObject>();
+                obj->SetLocalPosition(kLetter1X, kLetterY);
+                pLetterText[1] = obj->AddComponent<TextComponent>("A", letterFont, SDL_Color{ 255, 255, 255, 255 });
+                m_pLetter1Object = obj.get();
+                scene.Add(std::move(obj));
+            }
+            {
+                auto obj = std::make_unique<GameObject>();
+                obj->SetLocalPosition(kLetter2X, kLetterY);
+                pLetterText[2] = obj->AddComponent<TextComponent>("A", letterFont, SDL_Color{ 255, 255, 255, 255 });
+                m_pLetter2Object = obj.get();
+                scene.Add(std::move(obj));
+            }
+
+            // ── READY ─────────────────────────────────────────────────────────
+            TextComponent* pReadyText{};
+            {
+                auto obj = std::make_unique<GameObject>();
+                obj->SetLocalPosition(kReadyX, kReadyY);
+                pReadyText = obj->AddComponent<TextComponent>("READY", readyFont, SDL_Color{ 255, 255, 255, 255 });
+                m_pReadyObject = obj.get();
+                scene.Add(std::move(obj));
+            }
+
+            // ── Navigation component ──────────────────────────────────────────
+            {
+                auto obj = std::make_unique<GameObject>();
+                m_pEntryNav = obj->AddComponent<HighScoreNameEntryComponent>();
+                m_pEntryNav->SetLetterText(0, pLetterText[0]);
+                m_pEntryNav->SetLetterText(1, pLetterText[1]);
+                m_pEntryNav->SetLetterText(2, pLetterText[2]);
+                m_pEntryNav->SetReadyText(pReadyText);
+                m_pEntryNavObject = obj.get();
+                scene.Add(std::move(obj));
+            }
+
+            // ── Input bindings (name entry) ───────────────────────────────────
+            input.BindKeyboard(SDL_SCANCODE_LEFT,  KeyState::Pressed,
+                std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, -1));
+            input.BindKeyboard(SDL_SCANCODE_RIGHT, KeyState::Pressed,
+                std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, +1));
+            input.BindController(0, Controller::ControllerButton::DPadLeft,  KeyState::Pressed,
+                std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, -1));
+            input.BindController(0, Controller::ControllerButton::DPadRight, KeyState::Pressed,
+                std::make_unique<HighScoreHSlotCommand>(m_pEntryNav, +1));
+
+            input.BindKeyboard(SDL_SCANCODE_UP,   KeyState::Pressed,
+                std::make_unique<HighScoreLetterCommand>(m_pEntryNav, +1));
+            input.BindKeyboard(SDL_SCANCODE_DOWN, KeyState::Pressed,
+                std::make_unique<HighScoreLetterCommand>(m_pEntryNav, -1));
+            input.BindController(0, Controller::ControllerButton::DPadUp,   KeyState::Pressed,
+                std::make_unique<HighScoreLetterCommand>(m_pEntryNav, +1));
+            input.BindController(0, Controller::ControllerButton::DPadDown, KeyState::Pressed,
+                std::make_unique<HighScoreLetterCommand>(m_pEntryNav, -1));
+
+            input.BindKeyboard(SDL_SCANCODE_RETURN, KeyState::Pressed,
+                std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
+            input.BindController(0, Controller::ControllerButton::Start,   KeyState::Pressed,
+                std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
+            input.BindController(0, Controller::ControllerButton::ButtonA, KeyState::Pressed,
+                std::make_unique<HighScoreConfirmCommand>(m_pEntryNav, manager));
+        }
+        else
+        {
+            // ── Hint (score only) ─────────────────────────────────────────────
+            {
+                auto obj = std::make_unique<GameObject>();
+                obj->SetLocalPosition(kHintX, kHintY);
+                obj->AddComponent<TextComponent>(
+                    "Press Enter / Start to return to menu",
+                    hintFont, SDL_Color{ 180, 180, 180, 255 });
+                m_pHintObject = obj.get();
+                scene.Add(std::move(obj));
+            }
+
+            // ── Input bindings (dismiss only) ─────────────────────────────────
+            input.BindKeyboard(SDL_SCANCODE_RETURN, KeyState::Pressed,
+                std::make_unique<EnterCommand>(manager));
+            input.BindController(0, Controller::ControllerButton::Start,   KeyState::Pressed,
+                std::make_unique<EnterCommand>(manager));
+            input.BindController(0, Controller::ControllerButton::ButtonA, KeyState::Pressed,
+                std::make_unique<EnterCommand>(manager));
+        }
     }
 
     void HighScoreState::OnExit(GameManagerComponent*)
@@ -180,15 +204,21 @@ namespace dae
         if (!manager->IsStartRequested())
             return nullptr;
 
-        if (!m_AlreadySaved && m_pEntryNav)
+        if (m_ShowEntry)
         {
-            m_AlreadySaved = true;
-            HighScoreRepository::Save(
-                ResourceManager::GetInstance().GetDataPath(),
-                m_pEntryNav->GetInitials(),
-                m_FinalScore);
+            // Single-player: save initials then show leaderboard
+            if (!m_AlreadySaved && m_pEntryNav)
+            {
+                m_AlreadySaved = true;
+                HighScoreRepository::Save(
+                    ResourceManager::GetInstance().GetDataPath(),
+                    m_pEntryNav->GetInitials(),
+                    m_FinalScore);
+            }
+            return std::make_unique<ShowHighScoreState>();
         }
 
+        // Other modes: show leaderboard read-only (no entry was saved)
         return std::make_unique<ShowHighScoreState>();
     }
 }

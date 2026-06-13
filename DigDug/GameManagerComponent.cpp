@@ -32,52 +32,38 @@ namespace dae
     static constexpr float kGridWidth    = kGridCols * kCellSize;
     static constexpr float kGridHeight   = kGridRows * kCellSize;
 
-    static void DigShapeA(GridComponent* grid)
+    // ── DigLevel: one clean pre-dug layout used for all game modes ────────────
+    static void DigLevel(GridComponent* grid)
     {
-        grid->PreDigCell(1, 1, TunnelSide::Right | TunnelSide::Down);
-        grid->PreDigCell(2, 1, TunnelSide::Left  | TunnelSide::Right);
-        grid->PreDigCell(3, 1, TunnelSide::Left  | TunnelSide::Right);
-        grid->PreDigCell(4, 1, TunnelSide::Left);
-        grid->PreDigCell(1, 2, TunnelSide::Up | TunnelSide::Down);
-        grid->PreDigCell(1, 3, TunnelSide::Up | TunnelSide::Down);
-        grid->PreDigCell(1, 4, TunnelSide::Up);
-    }
+        // Pooka 1 tunnel – horizontal, row 2 (yellow zone), cols 1–4
+        grid->PreDigCell(1, 2, TunnelSide::Right);
+        grid->PreDigCell(2, 2, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(3, 2, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(4, 2, TunnelSide::Left);
 
-    static void DigShapeB(GridComponent* grid)
-    {
-        grid->PreDigCell(6,  5, TunnelSide::Right);
-        grid->PreDigCell(7,  5, TunnelSide::Left | TunnelSide::Right);
-        grid->PreDigCell(8,  5, TunnelSide::Left | TunnelSide::Right);
-        grid->PreDigCell(9,  5, TunnelSide::Left | TunnelSide::Right | TunnelSide::Down);
-        grid->PreDigCell(10, 5, TunnelSide::Left | TunnelSide::Right);
-        grid->PreDigCell(11, 5, TunnelSide::Left);
-        grid->PreDigCell(9,  6, TunnelSide::Up | TunnelSide::Down);
-        grid->PreDigCell(9,  7, TunnelSide::Up);
-    }
+        // Pooka 2 tunnel – horizontal, row 6 (orange zone), cols 9–12
+        grid->PreDigCell(9,  6, TunnelSide::Right);
+        grid->PreDigCell(10, 6, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(11, 6, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(12, 6, TunnelSide::Left);
 
-    static void DigShapeC(GridComponent* grid)
-    {
-        constexpr int colStart = 8, colEnd = 12;
-        constexpr int rowStart = 9, rowEnd = 12;
-        for (int col = colStart; col <= colEnd; ++col)
-        {
-            TunnelSide top = TunnelSide::None;
-            if (col > colStart) top |= TunnelSide::Left;
-            if (col < colEnd)   top |= TunnelSide::Right;
-            if (col == colStart || col == colEnd) top |= TunnelSide::Down;
-            grid->PreDigCell(col, rowStart, top);
+        // Pooka 3 tunnel – vertical, col 2 (dark-orange zone), rows 9–12
+        grid->PreDigCell(2,  9, TunnelSide::Down);
+        grid->PreDigCell(2, 10, TunnelSide::Up | TunnelSide::Down);
+        grid->PreDigCell(2, 11, TunnelSide::Up | TunnelSide::Down);
+        grid->PreDigCell(2, 12, TunnelSide::Up);
 
-            TunnelSide bot = TunnelSide::None;
-            if (col > colStart) bot |= TunnelSide::Left;
-            if (col < colEnd)   bot |= TunnelSide::Right;
-            if (col == colStart || col == colEnd) bot |= TunnelSide::Up;
-            grid->PreDigCell(col, rowEnd, bot);
-        }
-        for (int row = rowStart + 1; row < rowEnd; ++row)
-        {
-            grid->PreDigCell(colStart, row, TunnelSide::Up | TunnelSide::Down);
-            grid->PreDigCell(colEnd,   row, TunnelSide::Up | TunnelSide::Down);
-        }
+        // Fygar tunnel – horizontal, row 13 (dark-red zone), cols 5–8
+        grid->PreDigCell(5, 13, TunnelSide::Right);
+        grid->PreDigCell(6, 13, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(7, 13, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(8, 13, TunnelSide::Left);
+
+        // Player start tunnel – horizontal, row 7 (center), cols 5–8
+        grid->PreDigCell(5, 7, TunnelSide::Right);
+        grid->PreDigCell(6, 7, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(7, 7, TunnelSide::Left | TunnelSide::Right);
+        grid->PreDigCell(8, 7, TunnelSide::Left);
     }
 
     GameManagerComponent::GameManagerComponent(GameObject* owner)
@@ -110,9 +96,7 @@ namespace dae
         gridObj->AddComponent<GridComponent>(kGridWidth, kGridHeight, kGridCols, kGridRows);
 
         auto* grid = gridObj->GetComponent<GridComponent>();
-        DigShapeA(grid);
-        DigShapeB(grid);
-        DigShapeC(grid);
+        DigLevel(grid);   // ← replaces DigShapeA / DigShapeB / DigShapeC
 
         m_pGridObject = gridObj.get();
         scene.Add(std::move(gridObj));
@@ -163,7 +147,7 @@ namespace dae
         if (m_Player2Spawn.gameObject && m_Player2Spawn.gameObject->IsMarkedForDestroy())
             m_Player2Spawn.gameObject = nullptr;
 
-        // Win condition: all enemies dead while player 1 is still alive
+        // Win condition: all enemies dead
         if (!m_PlayerWon && !m_GameOver && !m_EnemySpawns.empty())
         {
             const bool allDead = std::all_of(m_EnemySpawns.begin(), m_EnemySpawns.end(),
@@ -171,9 +155,15 @@ namespace dae
 
             if (allDead)
             {
+                m_FinalScore = 0;
                 if (m_PlayerSpawn.gameObject)
                     if (auto* sc = m_PlayerSpawn.gameObject->GetComponent<ScoreComponent>())
-                        m_FinalScore = sc->GetScore();
+                        m_FinalScore += sc->GetScore();
+
+                // Add P2 score when in two-player mode
+                if (m_Player2Spawn.gameObject)
+                    if (auto* sc = m_Player2Spawn.gameObject->GetComponent<ScoreComponent>())
+                        m_FinalScore += sc->GetScore();
 
                 m_PlayerWon = true;
             }
@@ -196,11 +186,16 @@ namespace dae
         }
         else if (eventID == HealthEvent::Died)
         {
+            m_FinalScore = 0;
             if (m_PlayerSpawn.gameObject)
-            {
                 if (auto* sc = m_PlayerSpawn.gameObject->GetComponent<ScoreComponent>())
-                    m_FinalScore = sc->GetScore();
-            }
+                    m_FinalScore += sc->GetScore();
+
+            // Add P2 score when in two-player mode
+            if (m_Player2Spawn.gameObject)
+                if (auto* sc = m_Player2Spawn.gameObject->GetComponent<ScoreComponent>())
+                    m_FinalScore += sc->GetScore();
+
             m_GameOver = true;
         }
     }
@@ -340,7 +335,10 @@ namespace dae
         auto player2 = std::make_unique<GameObject>();
         player2->SetLocalPosition(spawnWorld);
         player2->AddComponent<TextureComponent>("Player2.png", 2.f);
-        player2->AddComponent<HealthComponent>(4);
+
+        auto* health = player2->AddComponent<HealthComponent>(4);
+        health->AddObserver(this);   // ← was missing: enemies never triggered a respawn
+
         player2->AddComponent<ScoreComponent>();
         player2->AddComponent<HitboxComponent>(34.f, 34.f, HitboxType::Player);
         player2->AddComponent<PlayerMovementComponent>(m_pGridObject);
@@ -452,6 +450,16 @@ namespace dae
 
             SetPlayerInvincible(true);
             m_InvincibilityTimer = k_InvincibilityDuration;
+        }
+
+        // ← was missing: Player 2 was never reset after a hit
+        if (m_Player2Spawn.gameObject &&
+            !m_Player2Spawn.gameObject->IsMarkedForDestroy())
+        {
+            ResetToSpawn(m_Player2Spawn);
+
+            if (auto* mv = m_Player2Spawn.gameObject->GetComponent<PlayerMovementComponent>())
+                mv->Reset();
         }
 
         for (auto& spawn : m_EnemySpawns)
